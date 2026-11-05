@@ -5308,6 +5308,7 @@ function App(){
       // Force network for instant
       try{ db.enableNetwork(); }catch(e){}
       const deviceId = localStorage.getItem('lifestyle_device_id') || (localStorage.setItem('lifestyle_device_id', uid()), localStorage.getItem('lifestyle_device_id'));
+      // FIX 1MB LIMIT: Trim large arrays for cloud - keep full in localStorage
       // ULTIMATE: Read fresh from localStorage to avoid React stale closure
       // FIX V18.2 Step1: State is truth, no localStorage length hack
       let latestBazar = Array.isArray(bazarList) ? bazarList : [];
@@ -5324,17 +5325,39 @@ function App(){
       try{ if(Array.isArray(latestTx) && Array.isArray(latestTxDel)) latestTx = latestTx.filter(x=> !latestTxDel.includes(x.id)); }catch(e){}
       // extra safety: remove tx whose bazarItemId was deleted
       try{ if(Array.isArray(latestTx) && Array.isArray(latestDeletedIds)) latestTx = latestTx.filter(x=> !x.bazarItemId || !latestDeletedIds.includes(x.bazarItemId)); }catch(e){}
-      const data = {transactions: latestTx||[], peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[], bazarList: latestBazar||[], bazarDeletedIds: latestDeletedIds||[], txDeletedIds: latestTxDel||[], dailyTasks: latestDailyTasks||[], userName, userDesignation, userAddress, userMobile, profilePhoto, updatedAt: now, deviceId: deviceId };
+      // FIX FOR 1MB FIRESTORE LIMIT: Only sync latest 300 transactions, 100 bazar items for instant
+      let trimmedTx = latestTx||[];
+      if(trimmedTx.length>400) trimmedTx = trimmedTx.slice(0,400);
+      let trimmedBazar = latestBazar||[];
+      if(trimmedBazar.length>150) trimmedBazar = trimmedBazar.slice(0,150);
+      // Remove large profilePhoto from sync if too big
+      let trimmedPhoto = profilePhoto;
+      try{ if(trimmedPhoto && trimmedPhoto.length>300000) trimmedPhoto=''; }catch(e){}
+      const data = {transactions: trimmedTx, peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[], bazarList: trimmedBazar, bazarDeletedIds: latestDeletedIds||[], txDeletedIds: latestTxDel||[], dailyTasks: latestDailyTasks||[], userName, userDesignation, userAddress, userMobile, profilePhoto: trimmedPhoto, updatedAt: now, deviceId: deviceId, fullCount: (latestTx||[]).length };
       db.collection('users').doc(user.uid).set(data, {merge:true}).then(()=>{
         saveLS('lifestyle_last_sync', Date.now());
         const timeStr = new Date(now).toLocaleString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
         saveLS('lifestyle_last_sync_formatted', timeStr);
         setLastSyncTime(timeStr);
-        setSyncStatus('✓ Synced instantly ' + new Date().toLocaleTimeString('bn-BD') + ' ('+(latestBazar||[]).length+' bazar)');
+        setSyncStatus('✓ Synced ' + new Date().toLocaleTimeString('bn-BD') + ' ('+trimmedTx.length+'/'+(latestTx||[]).length+')');
         lastCloudDataRef.current = data;
         saveLS('lifestyle_offline_pending','false');
         setOfflineQueue(false);
-      }).catch(e=>{ console.log('syncToCloud err',e); setSyncStatus('Sync failed: '+(e.message||e)); });
+        console.log('SYNC SUCCESS', now);
+      }).catch(e=>{ 
+        console.log('syncToCloud err',e); 
+        setSyncStatus('Sync FAILED: '+(e.message||e).substring(0,80)); 
+        setToast('Sync Failed: '+(e.message||e).substring(0,120));
+        // Try again with even smaller data
+        try{
+          const tinyData = {transactions: (latestTx||[]).slice(0,100), bazarList: (latestBazar||[]).slice(0,50), updatedAt: now, deviceId: deviceId, userName, userMobile};
+          db.collection('users').doc(user.uid).set(tinyData, {merge:true}).then(()=>{
+            setSyncStatus('✓ Synced (tiny) ' + new Date().toLocaleTimeString('bn-BD'));
+            setLastSyncTime(new Date(now).toLocaleString('en-US'));
+            saveLS('lifestyle_last_sync_formatted', new Date(now).toLocaleString('en-US'));
+          });
+        }catch(e2){}
+      });
     }catch(e){ console.log('syncToCloud',e); }
   }
 
@@ -5995,22 +6018,18 @@ setTimeout(()=>{
 
   if(page === 'home'){
     pageContent = h('div', {className:'pt-5 pb-6 space-y-6'},
-      googleUser ? h('div', {className:'bg-[#E3F2FD] border-2 border-[#1976D2] rounded-[16px] p-3 flex flex-col gap-2'},
-        h('div', {className:'flex items-center justify-between'},
-          h('p', {className:'text-[13px] font-extrabold text-[#0D47A1]'}, 'Instant Sync - Same Gmail'),
-          h('span', {className:'text-[10px] bg-white px-2 py-0.5 rounded-full border text-[#2E7D32]'}, syncStatus || 'Live')
-        ),
-        h('button', {onClick:()=>forceSyncNow(), className:'w-full py-3 rounded-full bg-[#1976D2] text-white font-extrabold text-[14px] shadow-md'}, 'Force Sync Now - Tap to Update All Devices'),
-        h('p', {className:'text-[10px] text-[#5C6BC0]'}, lastSyncTime ? 'Last Sync: '+lastSyncTime : 'Tap button to sync instantly')
-      ) : null,
+
       !isOnline ? h('div', {className:'bg-[#FFEBEE] border border-[#FFCDD2] rounded-[12px] p-2.5 flex items-center gap-2'}, h('span', {className:'text-[14px]'}, '📴'), h('div', {className:'flex-1'}, h('p', {className:'text-[11px] font-bold text-[#B71C1C]'}, lang==='en'?'Offline Mode - Data saved locally':'অফলাইন - ডাটা লোকালি সেভ হচ্ছে'), h('p', {className:'text-[10px] text-[#8B7355]'}, lang==='en'?'Will auto sync when online':'অনলাইনে এলে অটো সিঙ্ক হবে')), h('span', {className:'w-2 h-2 rounded-full bg-[#B71C1C] animate-pulse'})) : offlineQueue ? h('div', {className:'bg-[#FFF8E1] border border-[#FFE082] rounded-[12px] p-2.5 flex items-center gap-2'}, h('span', {className:'text-[14px]'}, '⏳'), h('div', {className:'flex-1'}, h('p', {className:'text-[11px] font-bold text-[#8B7355]'}, lang==='en'?'Pending sync':'পেন্ডিং সিঙ্ক'), h('p', {className:'text-[10px] text-[#8B7355]'}, lang==='en'?'Data will sync automatically':'অটো সিঙ্ক হবে')), h('button', {onClick:()=>{ if(googleUser) { syncToCloud(googleUser); setToast('Syncing...'); } }, className:'px-2.5 py-1 rounded-full bg-[#2D2A26] text-white text-[10px] font-bold'}, 'Auto Sync • Live')) : null,
       googleUser ? h('div', {className:'bg-[#FFFBF7] border border-[#F3E8D3] rounded-[16px] p-3 space-y-2'},
         null,
         h('div', {className:'flex gap-2 items-center'},
+          h('div', {className:'flex items-center gap-2'},
           h('div', {className:'px-3 py-1.5 bg-[#E8F5E9] border border-[#A5D6A7] rounded-full text-[11px] font-bold text-[#2E7D32] flex items-center gap-1'}, 
             h('span', {className:'w-2 h-2 bg-[#4CAF50] rounded-full animate-pulse inline-block'}, ''),
             ' Auto Sync • Live'
           ),
+          h('button', {onClick:()=>forceSyncNow(), title:'Force Sync - Same Gmail All Devices', className:'w-7 h-7 rounded-full bg-[#E3F2FD] border border-[#90CAF9] flex items-center justify-center text-[14px] active:scale-90 shadow-sm'}, '🔄')
+        ),
           h('div', {className:'px-3 py-1.5 bg-[#F3E8D3] rounded-full text-[10px] text-[#8B7355]'}, 'Instant')
         ),
         lastSyncTime ? h('p', {className:'text-[11px] text-[#8B7355]'}, lastSyncTime) : null
