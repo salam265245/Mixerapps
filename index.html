@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Lifestyle V18.9 Travel - Date Bigger DMY + Tick Mark</title>
+<title>Lifestyle V18.8 Travel Partner - Bigger Title List Today Default</title>
 <link rel="manifest" href="manifest.json">
 
 <!-- Single File PWA - Lifestyle Logo Embedded -->
@@ -349,9 +349,6 @@ const h = React.createElement;
 
 /* ---------- helpers ---------- */
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
-
-function formatDMY(d){ try{ if(!d) return ''; const parts=d.split('-'); if(parts.length!==3) return d; return parts[2]+'/'+parts[1]+'/'+parts[0]; }catch(e){ return d; } }
-
 function today(){ 
   const d = new Date();
   const yyyy = d.getFullYear();
@@ -750,7 +747,7 @@ function CategoryPicker({ t, lang, type, value, onChange }){
         onClick: ()=>{ if(type==='expense' && !q){ setOpen(o=>!o); } }
       }),
       q ? h('button', {type:'button', onClick: ()=>{ setQ(''); hideKeyboard(); }, className:'w-[38px] h-[38px] rounded-full bg-white border border-[#F3E8D3] flex items-center justify-center text-[14px]'}, '✕') : null,
-      h('button', {type:'button', onClick: hideKeyboard, className:'px-3 h-[38px] rounded-full bg-[#2D2A26] text-white text-[11px] font-bold whitespace-nowrap'}, lang==='en' ? 'Hide ⌨️' : 'কীবোর্ড লুকান')
+      h('button', {type:'button', onClick: hideKeyboard, className:'px-3 h-[38px] rounded-full bg-[#2D2A26] text-white text-[13px] font-bold whitespace-nowrap'}, lang==='en' ? 'Hide ⌨️' : 'কীবোর্ড লুকান')
     ),
     shouldShowGrid ? h('div', {className:'grid grid-cols-2 gap-2 max-h-[50dvh] overflow-y-auto p-1 overscroll-contain', style:{WebkitOverflowScrolling:'touch'}},
       filtered.map((a,i)=> h('button', {
@@ -1158,7 +1155,7 @@ function BankLoanForm({ t, lang, initial, onSave }){
                     h('button', {
                       type:'button',
                       onClick:()=>togglePaid(r.idx),
-                      className:'w-7 h-7 rounded-[6px] border-2 flex items-center justify-center text-[14px] font-bold mx-auto ' + (r.paid ? 'bg-[#4CAF50] border-[#4CAF50] text-white' : 'bg-white border-[#FFCDD2] text-[#B71C1C]')
+                      className:'w-7 h-7 rounded-[6px] border-2 flex items-center justify-center text-[16px] font-bold mx-auto ' + (r.paid ? 'bg-[#4CAF50] border-[#4CAF50] text-white' : 'bg-white border-[#FFCDD2] text-[#B71C1C]')
                     }, r.paid ? '✓' : '☐')
                   )
                 ))
@@ -1209,6 +1206,7 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
   const [editingLoan, setEditingLoan] = useState(null);
   const [editingPayment, setEditingPayment] = useState(null);
   const [confirmDel, setConfirmDel] = useState(null); // {kind:'loan'|'payment'|'person', id}
+  const [confirmDelFinal, setConfirmDelFinal] = useState(null); // second step double confirmation for loans
 
   const totalLoaned = person.loans.reduce((a,l)=>a+l.amount,0);
   const totalPaid = person.payments.reduce((a,p)=>a+p.amount,0);
@@ -1228,16 +1226,24 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
     onUpdatePerson(Object.assign({}, person, {payments}));
     setAddingPayment(false); setEditingPayment(null);
   }
-  function doDelete(){
+  function doDeleteFirst(){
     if(!confirmDel) return;
-    if(confirmDel.kind === 'loan'){
-      onUpdatePerson(Object.assign({}, person, {loans: person.loans.filter(l=>l.id!==confirmDel.id)}));
-    } else if(confirmDel.kind === 'payment'){
-      onUpdatePerson(Object.assign({}, person, {payments: person.payments.filter(p=>p.id!==confirmDel.id)}));
-    } else if(confirmDel.kind === 'person'){
+    // First Yes -> move to second confirmation (Double Confirmation for Loan/Return/Repayment/Bank)
+    setConfirmDelFinal(confirmDel);
+    setConfirmDel(null);
+  }
+  function doDeleteFinal(){
+    const target = confirmDelFinal || confirmDel;
+    if(!target) return;
+    if(target.kind === 'loan'){
+      onUpdatePerson(Object.assign({}, person, {loans: person.loans.filter(l=>l.id!==target.id)}));
+    } else if(target.kind === 'payment'){
+      onUpdatePerson(Object.assign({}, person, {payments: person.payments.filter(p=>p.id!==target.id)}));
+    } else if(target.kind === 'person'){
       onDeletePerson(person.id);
     }
     setConfirmDel(null);
+    setConfirmDelFinal(null);
   }
 
   const balanceLabel = kind === 'given' ? t.youWillGet : t.youOwe;
@@ -1311,7 +1317,7 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
             if(typeof shareOrDownloadPdf==='function') await shareOrDownloadPdf(blob, (person.name||'person') + '-loan-history.pdf', (person.name||'person') + ' History');
             else if(typeof downloadPdfBlob==='function') downloadPdfBlob(blob, (person.name||'person') + '-loan-history.pdf');
           }catch(e){ console.error('PDF Share Error', e); try{ alert('Share সমস্যা: '+(e&&e.message||'')); }catch(e2){} }
-        }, className:'py-2.5 rounded-full bg-[#2D2A26] text-white text-[11px] font-bold'}, '📤 Share')
+        }, className:'py-2.5 rounded-full bg-[#2D2A26] text-white text-[13px] font-bold'}, '📤 Share')
       )
     ),
     h('div', {className:'flex items-center justify-end gap-2'},
@@ -1374,7 +1380,13 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
       open: !!confirmDel, title: t.confirmDeleteTitle,
       message: confirmDel && confirmDel.kind === 'person' ? t.deletePersonMsg : t.confirmDeleteMsg,
       cancelLabel: t.cancel, confirmLabel: t.yesDelete,
-      onCancel: ()=>setConfirmDel(null), onConfirm: doDelete
+      onCancel: ()=>setConfirmDel(null), onConfirm: doDeleteFirst
+    }),
+    h(ConfirmModal, {
+      open: !!confirmDelFinal, title: lang==='en' ? 'Are you 100% sure?' : 'আপনি কি ১০০% নিশ্চিত?',
+      message: lang==='en' ? 'This is final confirmation. This data will be permanently deleted and cannot be recovered. Do you want to proceed?' : 'এটি চূড়ান্ত নিশ্চিতকরণ। এই তথ্য স্থায়ীভাবে মুছে যাবে এবং আর ফেরত পাওয়া যাবে না। আপনি কি এগিয়ে যেতে চান?',
+      cancelLabel: t.cancel, confirmLabel: lang==='en' ? 'Yes, I am 100% sure - Delete' : 'হ্যাঁ, আমি ১০০% নিশ্চিত - মুছুন',
+      onCancel: ()=>{ setConfirmDelFinal(null); }, onConfirm: doDeleteFinal
     })
   );
 }
@@ -1423,7 +1435,7 @@ function PeopleList({ t, lang, kind, people, onOpenPerson, onAddPerson, userName
     ),
     h('div', {className:'bg-white rounded-[16px] p-3 border border-[#F3E8D3] space-y-3'},
       h('div', {className:'flex gap-2'},
-        h('button', {onClick:()=>handleCombinedPdf('download'), className:'flex-1 py-2.5 rounded-[12px] bg-[#2D2A26] text-white text-[11px] font-bold'}, '📄 PDF'),
+        h('button', {onClick:()=>handleCombinedPdf('download'), className:'flex-1 py-2.5 rounded-[12px] bg-[#2D2A26] text-white text-[13px] font-bold'}, '📄 PDF'),
         h('button', {onClick:()=>handleCombinedPdf('view'), className:'flex-1 py-2.5 rounded-[12px] bg-white border border-[#F3E8D3] text-[#2D2A26] text-[11px] font-bold'}, '👁️ View'),
         h('button', {onClick:()=>handleCombinedPdf('share'), className:'flex-1 py-2.5 rounded-[12px] bg-[#C9A86A] text-[#2D2A26] text-[11px] font-bold'}, '📤 Share')
       ),
@@ -2807,6 +2819,7 @@ function EmailAuthForm({t, onAuth}){
 
 
 
+function toTitleCase(str){ try{ if(!str) return ''; return str.replace(/_/g,' ').replace(/\b\w+/g, function(w){ return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase(); }); }catch(e){ return str; } }
 function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, setDailyTasks: propSetDailyTasks}){
   const SUBJECT_OPTIONS = [
     {id:'emi', en:'EMI', bn:'EMI', icon:'💳'},
@@ -3092,20 +3105,23 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
     h('div', {className:'bg-white border border-[#F3E8D3] rounded-[16px] p-3 m-4 mb-0'},
       h('div', {className:'flex justify-between items-center mb-2'},
         h('p', {className:'text-[13px] font-bold text-[#1A1A1A]'}, `Saved Tasks (${(dailyTasks||[]).length})`),
-        h('button', {onClick: handleNewTask, className:'px-3 py-1.5 rounded-full bg-[#1B4D3E] text-white text-[11px] font-bold'}, '+ New Task')
+        h('button', {onClick: handleNewTask, className:'px-3 py-1.5 rounded-full bg-[#2E7D32] text-white text-[13px] font-bold'}, '+ New Task')
       ),
       (dailyTasks||[]).length===0 ? h('p', {className:'text-[11px] text-[#8B7355] text-center py-2'}, lang==='en' ? 'No saved tasks' : 'কোনো টাস্ক নেই') :
       h('div', {className:'space-y-2 max-h-[220px] overflow-y-auto'},
         dailyTasks.map(task=>
           h('div', {key:task.id, className:'rounded-[12px] p-2.5 border flex justify-between items-start gap-2 cursor-pointer ' + (task.done===true ? 'bg-[#E8F5E9] border-[#A5D6A7]' : task.done===false ? 'bg-[#FFEBEE] border-[#FFCDD2]' : 'bg-[#FFFEF7] border-[#F3E8D3]'), onClick:()=>handleLoadTask(task)},
-            h('div', {className:'flex-1 min-w-0'},
-              h('p', {className:'font-bold text-[12px] truncate ' + (task.done===true ? 'text-[#1B4D3E]' : task.done===false ? 'text-[#B71C1C]' : 'text-[#1A1A1A]')}, task.subject || task.personName || task.category || 'Task'),
-              h('p', {className:'text-[10px] text-[#8B7355] truncate'}, `${task.personName||''} ${task.date||''} ${task.time||''}`.trim())
+            h('div', {className:'flex-1 min-w-0 space-y-1'},
+              h('p', {className:'font-extrabold text-[14px] text-[#B71C1C] leading-snug'}, 'বিষয়: '+ (function(t){ try{ var subs=t.selectedSubjects||t.subjects||[]; if(subs.length>0){ return subs.map(function(s){ return toTitleCase(s.replace(/_/g,' ')); }).join(', '); } return toTitleCase(t.subject||t.category||'Task'); }catch(e){ return toTitleCase(t.subject||'Task'); } })(task)),
+              task.personName ? h('p', {className:'font-bold text-[13px] text-[#2E7D32] leading-tight'}, 'ব্যক্তি: '+task.personName) : null,
+              h('p', {className:'font-semibold text-[12px] text-[#1A1A1A] leading-tight'}, 'তারিখ: '+(function(d){ try{ if(!d) return ''; var p=d.split('-'); if(p.length===3){ if(p[0].length===4) return p[2]+'/'+p[1]+'/'+p[0]; return d; } return d; }catch(e){ return d; } })(task.date||task.dateInput||'')),
+              h('p', {className:'font-medium text-[11px] text-[#5C4A32] leading-tight'}, 'সময়: '+(task.time||'')),
+              (task.notes||task.note) ? h('p', {className:'font-medium text-[11px] text-[#6B4E2A] leading-snug bg-[#FFF8E1] border border-[#FFE0B2] rounded-[8px] p-1.5 mt-1'}, 'নোট: '+(task.notes||task.note)) : null
             ),
-            h('div', {className:'flex gap-1 shrink-0'},
-              h('button', {onClick:(e)=>{ e.stopPropagation(); setDailyTasks(prev=> prev.map(t=> t.id===task.id ? {...t, done: true} : t)); }, className:'px-3 py-1 rounded-full text-[10px] font-bold border transition-colors ' + (task.done===true ? 'bg-[#1E4538] text-white border-[#1E4538]' : 'bg-white border-[#E8E6DC] text-[#2D2A26] hover:bg-[#E8F5E9]')}, 'Yes'),
-              h('button', {onClick:(e)=>{ e.stopPropagation(); setDailyTasks(prev=> prev.map(t=> t.id===task.id ? {...t, done: false} : t)); }, className:'px-3 py-1 rounded-full text-[10px] font-bold border transition-colors ' + (task.done===false ? 'bg-[#B71C1C] text-white border-[#B71C1C]' : 'bg-white border-[#FFCDD2] text-[#B71C1C] hover:bg-[#FFEBEE]')}, 'No'),
-              h('button', {onClick:(e)=>{ e.stopPropagation(); handleDeleteDailyTask(task.id); }, className:'px-2 py-1 rounded-full text-[10px] font-bold bg-white border border-[#FFCDD2] text-[#B71C1C]'}, 'Del')
+            h('div', {className:'flex flex-col gap-1.5 shrink-0'},
+              h('button', {onClick:(e)=>{ e.stopPropagation(); setDailyTasks(prev=> prev.map(t=> t.id===task.id ? {...t, done: true} : t)); }, className:'px-4 py-2 rounded-full text-[12px] font-bold border transition-colors min-w-[60px] ' + (task.done===true ? 'bg-[#1E4538] text-white border-[#1E4538]' : 'bg-white border-[#E8E6DC] text-[#2D2A26] hover:bg-[#E8F5E9]')}, 'Yes'),
+              h('button', {onClick:(e)=>{ e.stopPropagation(); setDailyTasks(prev=> prev.map(t=> t.id===task.id ? {...t, done: false} : t)); }, className:'px-4 py-2 rounded-full text-[12px] font-bold border transition-colors min-w-[60px] ' + (task.done===false ? 'bg-[#B71C1C] text-white border-[#B71C1C]' : 'bg-white border-[#FFCDD2] text-[#B71C1C] hover:bg-[#FFEBEE]')}, 'No'),
+              h('button', {onClick:(e)=>{ e.stopPropagation(); handleDeleteDailyTask(task.id); }, className:'px-4 py-2 rounded-full text-[11px] font-bold bg-white border border-[#FFCDD2] text-[#B71C1C] min-w-[60px]'}, 'Delete')
             )
           )
         )
@@ -3156,7 +3172,7 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
                   setToast && setToast('Error: '+e.message);
                 }
               }
-            }, style:{color:'white', backgroundColor:'#1B4D3E'}, className:'px-4 py-3.5 rounded-[16px] bg-[#1B4D3E] text-white text-[12px] font-bold flex items-center gap-2 shrink-0'}, h('span', null, '👤'), h('span', null, 'Pick from Contact'))
+            }, style:{color:'white', backgroundColor:'#1B4D3E'}, className:'px-4 py-3.5 rounded-[16px] bg-[#2E7D32] text-white text-[12px] font-bold flex items-center gap-2 shrink-0'}, h('span', null, '👤'), h('span', null, 'Pick from Contact'))
           ),
           h('p', {className:'text-[11px] text-[#8B7355] mt-2'}, 'Tap contact icon to pick from phone')
         ),
@@ -3168,15 +3184,15 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
             h('select', {value:hour, onChange:e=>setHour(e.target.value), className:'flex-1 bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-2 py-2.5 text-[16px] font-bold text-center text-[#1A1A1A]'}, Array.from({length:12}, (_,i)=> String(i+1).padStart(2,'0')).map(hh=> h('option', {key:hh, value:hh}, hh))),
             h('span', {className:'font-bold text-[#1A1A1A]'}, ':'),
             h('select', {value:minute, onChange:e=>setMinute(e.target.value), className:'flex-1 bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-2 py-2.5 text-[16px] font-bold text-center text-[#1A1A1A]'}, Array.from({length:60}, (_,i)=> String(i).padStart(2,'0')).map(mm=> h('option', {key:mm, value:mm}, mm))),
-            h('div', {className:'flex rounded-[12px] overflow-hidden border border-[#E8E6DC]'},
-              h('button', {onClick:()=>setAmPm('AM'), className:'px-3 py-2.5 text-[12px] font-bold ' + (amPm==='AM' ? 'bg-[#1B4D3E] text-white' : 'bg-[#F9F6F0] text-[#8B7355]')}, 'AM'),
-              h('button', {onClick:()=>setAmPm('PM'), className:'px-3 py-2.5 text-[12px] font-bold ' + (amPm==='PM' ? 'bg-[#1B4D3E] text-white' : 'bg-[#F9F6F0] text-[#8B7355]')}, 'PM')
+            h('div', {className:'flex rounded-[14px] overflow-hidden border-2 border-[#E8E6DC]'},
+              h('button', {onClick:()=>setAmPm('AM'), className:'px-5 py-3 text-[13px] font-extrabold transition-colors ' + (amPm==='AM' ? 'bg-[#2E7D32] text-white' : 'bg-white text-[#8B7355]')}, 'AM'),
+              h('button', {onClick:()=>setAmPm('PM'), className:'px-5 py-3 text-[13px] font-extrabold transition-colors ' + (amPm==='PM' ? 'bg-[#2E7D32] text-white' : 'bg-white text-[#8B7355]')}, 'PM')
             )
           ),
           h('p', {className:'text-[11px] text-[#8B7355] mt-2'}, 'ঘণ্টা ও মিনিট স্ক্রল করে সিলেক্ট করুন, AM/PM সেট করুন')
         ),
         h('div', null,
-          h('div', {className:'flex items-center gap-2 mb-1.5'}, h('label', {className:labelClass + ' !mb-0'}, '📄 বিষয় / Subject'), selectedSubjects.length>0 ? h('span', {className:'px-2.5 py-0.5 rounded-full bg-[#1B4D3E] text-white text-[11px] font-bold'}, `${selectedSubjects.length} selected`) : null),
+          h('div', {className:'flex items-center gap-2 mb-1.5'}, h('label', {className:labelClass + ' !mb-0'}, '📄 বিষয় / Subject'), selectedSubjects.length>0 ? h('span', {className:'px-2.5 py-0.5 rounded-full bg-[#2E7D32] text-white text-[13px] font-bold'}, `${selectedSubjects.length} selected`) : null),
           h('div', {className:'relative mt-1.5'},
             h('input', {
               value:subjectSearch, 
@@ -3205,9 +3221,9 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
             h('select', {value:hour, onChange:e=>setHour(e.target.value), className:'flex-1 bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-2 py-2.5 text-[16px] font-bold text-center'}, Array.from({length:12}, (_,i)=> String(i+1).padStart(2,'0')).map(hh=> h('option', {key:hh, value:hh}, hh))),
             h('span', {className:'font-bold'}, ':'),
             h('select', {value:minute, onChange:e=>setMinute(e.target.value), className:'flex-1 bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-2 py-2.5 text-[16px] font-bold text-center'}, Array.from({length:60}, (_,i)=> String(i).padStart(2,'0')).map(mm=> h('option', {key:mm, value:mm}, mm))),
-            h('div', {className:'flex rounded-[12px] overflow-hidden border border-[#E8E6DC]'},
-              h('button', {onClick:()=>setAmPm('AM'), className:'px-3 py-2.5 text-[12px] font-bold ' + (amPm==='AM' ? 'bg-[#1B4D3E] text-white' : 'bg-[#F9F6F0] text-[#8B7355]')}, 'AM'),
-              h('button', {onClick:()=>setAmPm('PM'), className:'px-3 py-2.5 text-[12px] font-bold ' + (amPm==='PM' ? 'bg-[#1B4D3E] text-white' : 'bg-[#F9F6F0] text-[#8B7355]')}, 'PM')
+            h('div', {className:'flex rounded-[14px] overflow-hidden border-2 border-[#E8E6DC]'},
+              h('button', {onClick:()=>setAmPm('AM'), className:'px-5 py-3 text-[13px] font-extrabold transition-colors ' + (amPm==='AM' ? 'bg-[#2E7D32] text-white' : 'bg-white text-[#8B7355]')}, 'AM'),
+              h('button', {onClick:()=>setAmPm('PM'), className:'px-5 py-3 text-[13px] font-extrabold transition-colors ' + (amPm==='PM' ? 'bg-[#2E7D32] text-white' : 'bg-white text-[#8B7355]')}, 'PM')
             )
           )
         ),
@@ -3253,9 +3269,9 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
             h('select', {value:hour, onChange:e=>setHour(e.target.value), className:'flex-1 bg-[#F9F6F0] border rounded-[12px] px-2 py-2.5 text-[16px] font-bold text-center'}, Array.from({length:12}, (_,i)=> String(i+1).padStart(2,'0')).map(hh=> h('option', {key:hh, value:hh}, hh))),
             h('span', null, ':'),
             h('select', {value:minute, onChange:e=>setMinute(e.target.value), className:'flex-1 bg-[#F9F6F0] border rounded-[12px] px-2 py-2.5 text-[16px] font-bold text-center'}, Array.from({length:60}, (_,i)=> String(i).padStart(2,'0')).map(mm=> h('option', {key:mm, value:mm}, mm))),
-            h('div', {className:'flex rounded-[12px] overflow-hidden border'},
-              h('button', {onClick:()=>setAmPm('AM'), className:'px-3 py-2.5 text-[12px] font-bold ' + (amPm==='AM' ? 'bg-[#1B4D3E] text-white' : 'bg-[#F9F6F0]')}, 'AM'),
-              h('button', {onClick:()=>setAmPm('PM'), className:'px-3 py-2.5 text-[12px] font-bold ' + (amPm==='PM' ? 'bg-[#1B4D3E] text-white' : 'bg-[#F9F6F0]')}, 'PM')
+            h('div', {className:'flex rounded-[14px] overflow-hidden border-2 border-[#E8E6DC]'},
+              h('button', {onClick:()=>setAmPm('AM'), className:'px-5 py-3 text-[13px] font-extrabold transition-colors ' + (amPm==='AM' ? 'bg-[#2E7D32] text-white' : 'bg-white text-[#8B7355]')}, 'AM'),
+              h('button', {onClick:()=>setAmPm('PM'), className:'px-5 py-3 text-[13px] font-extrabold transition-colors ' + (amPm==='PM' ? 'bg-[#2E7D32] text-white' : 'bg-white text-[#8B7355]')}, 'PM')
             )
           )
         ),
@@ -3281,503 +3297,62 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
 }
 
 
-function TravelManager({t, lang, setToast}){
-  const TRAVEL_GROUPS = [
-    {id:'electronics', name:'ইলেকট্রনিক্স', nameEn:'Electronics', icon:'📱', items:[
-      {id:'mobile', label:'মোবাইল – Mobile', icon:'📱'},
-      {id:'tab', label:'ট্যাব – Tab', icon:'📲'},
-      {id:'laptop', label:'ল্যাপটপ – Laptop', icon:'💻'},
-      {id:'powerbank', label:'পাওয়ার ব্যাংক – Power Bank', icon:'🔋'},
-      {id:'charger', label:'চার্জার – Charger', icon:'🔌'},
-      {id:'multiplug', label:'মাল্টি প্লাগ – Multi Plug', icon:'🔌'},
-      {id:'headphone', label:'হেডফোন – Headphone', icon:'🎧'},
-      {id:'pendrive', label:'পেনড্রাইভ – Pen Drive', icon:'💾'},
-      {id:'hdd', label:'পোর্টেবল হার্ডডিস্ক – Portable Hard Disk', icon:'🗄️'},
-    ]},
-    {id:'clothing', name:'পোশাক', nameEn:'Clothing', icon:'👕', items:[
-      {id:'shirt', label:'জামা – Shirt', icon:'👔'},
-      {id:'pants', label:'প্যান্ট – Pants', icon:'👖'},
-      {id:'tshirt', label:'টিশার্ট – T-shirt', icon:'👕'},
-      {id:'underwear', label:'জাঙ্গিয়া – Underwear', icon:'🩲'},
-      {id:'socks', label:'মোজা – Socks', icon:'🧦'},
-      {id:'winter', label:'শীতের কাপড় – Winter Clothes', icon:'🧥'},
-      {id:'shorts', label:'হাফ প্যান্ট – Shorts', icon:'🩳'},
-      {id:'lungi', label:'লুঙ্গি – Lungi', icon:'🧣'},
-      {id:'gamchha', label:'গামছা – Gamchha (Towel)', icon:'🧻'},
-    ]},
-    {id:'shoes', name:'জুতা ও হেলমেট', nameEn:'Shoes & Helmet', icon:'👟', items:[
-      {id:'shoes', label:'জুতা – Shoes', icon:'👟'},
-      {id:'shoes2', label:'জুতা (২য় জোড়া) – Shoes (2nd pair)', icon:'👞'},
-      {id:'helmet', label:'হেলমেট – Helmet', icon:'🪖'},
-      {id:'shoe_brush', label:'জুতার ব্রাশ – Shoe Brush', icon:'🪥'},
-      {id:'shoe_polish', label:'জুতার কালি – Shoe Polish', icon:'🧴'},
-    ]},
-    {id:'personal', name:'ব্যক্তিগত ব্যবহার', nameEn:'Personal Use', icon:'🧼', items:[
-      {id:'shaving', label:'শেভিং কিটস – Shaving Kit', icon:'🪒'},
-      {id:'shampoo', label:'শ্যাম্পু – Shampoo', icon:'🧴'},
-      {id:'toothbrush', label:'টুথ ব্রাশ – Toothbrush', icon:'🪥'},
-      {id:'toothpaste', label:'টুথ পেস্ট – Toothpaste', icon:'🦷'},
-      {id:'nailcutter', label:'নেল কাটার – Nail Cutter', icon:'✂️'},
-      {id:'medicine', label:'ঔষধ – Medicine', icon:'💊'},
-      {id:'cigarette', label:'সিগারেট – Cigarette', icon:'🚬'},
-      {id:'lighter', label:'লাইটার – Lighter', icon:'🔥'},
-    ]},
-    {id:'papers', name:'কাগজপত্র ও টাকা', nameEn:'Papers & Money', icon:'📄', items:[
-      {id:'atm', label:'এটিএম কার্ড – ATM Card', icon:'💳'},
-      {id:'bike_papers', label:'বাইকের কাগজপত্র – Bike Papers', icon:'🏍️'},
-      {id:'license', label:'ড্রাইভিং লাইসেন্স – Driving License', icon:'🪪'},
-      {id:'passport_photos', label:'পাসপোর্ট সাইজ ছবি – Passport-size Photos', icon:'🖼️'},
-      {id:'nid_copy', label:'NID ফটোকপি – NID Photocopy', icon:'🪪'},
-      {id:'visiting_card', label:'ভিজিটিং কার্ড – Visiting Card', icon:'📇'},
-    ]},
-    {id:'stationery', name:'লেখার সরঞ্জাম', nameEn:'Writing Tools', icon:'Edit', items:[
-      {id:'pen', label:'কলম – Pen', icon:'🖊️'},
-      {id:'pad', label:'প্যাড – Notepad', icon:'📝'},
-      {id:'diary', label:'ডায়েরি – Diary', icon:'📓'},
-    ]},
-    {id:'others', name:'অন্যান্য', nameEn:'Others', icon:'📌', items:[
-      {id:'other1', label:'Other Item 1', icon:'📌'},
-      {id:'other2', label:'Other Item 2', icon:'📌'},
-    ]},
-  ];
 
-  const [selected, setSelected] = React.useState(()=>{
-    try{ const s = JSON.parse(localStorage.getItem('travel_checklist_selected')||'[]'); return Array.isArray(s)?s:[]; }catch(e){ return []; }
-  });
-  const [openGroups, setOpenGroups] = React.useState({electronics:true});
-  const [search, setSearch] = React.useState('');
-  const [othersNote, setOthersNote] = React.useState(()=>{
-    try{ return localStorage.getItem('travel_others_note')||''; }catch(e){ return ''; }
-  });
-  const [showOthers, setShowOthers] = React.useState(false);
-  const [saving, setSaving] = React.useState(false);
-  // NEW: Travel Partner trip details
-  const [fromLocation, setFromLocation] = React.useState(()=>{ try{ return localStorage.getItem('travel_from_loc')||''; }catch(e){ return ''; } });
-  const [destination, setDestination] = React.useState(()=>{ try{ return localStorage.getItem('travel_dest')||''; }catch(e){ return ''; } });
-  const [fromDate, setFromDate] = React.useState(()=>{ try{ const v=localStorage.getItem('travel_from_date'); if(v) return v; const t=today(); try{ localStorage.setItem('travel_from_date', t); }catch(e){} return t; }catch(e){ return today(); } });
-  const [toDate, setToDate] = React.useState(()=>{ try{ const v=localStorage.getItem('travel_to_date'); if(v) return v; const t=today(); try{ localStorage.setItem('travel_to_date', t); }catch(e){} return t; }catch(e){ return today(); } });
-  const [travelStatus, setTravelStatus] = React.useState('Not Yet');
-  const [travelList, setTravelList] = React.useState(()=>{ try{ const l=JSON.parse(localStorage.getItem('travel_partner_list')||'[]'); return Array.isArray(l)?l:[]; }catch(e){ return []; } });
-  const [showTravelList, setShowTravelList] = React.useState(false);
-  const [editingTravelId, setEditingTravelId] = React.useState(null);
+const BD_DIVISIONS = [
+  {id:'dhaka', bn:'ঢাকা', en:'Dhaka', districts:[
+    {id:'dhaka', bn:'ঢাকা', en:'Dhaka', upazilas:['Dhamrai','Dohar','Keraniganj','Nawabganj','Savar']},
+    {id:'gazipur', bn:'গাজীপুর', en:'Gazipur', upazilas:['Gazipur Sadar','Kaliakair','Kaliganj','Kapasia','Sreepur']},
+    {id:'narayanganj', bn:'নারায়ণগঞ্জ', en:'Narayanganj', upazilas:['Araihazar','Bandar','Narayanganj Sadar','Rupganj','Sonargaon']},
+    {id:'tangail', bn:'টাঙ্গাইল', en:'Tangail', upazilas:['Tangail Sadar','Kalihati','Madhupur','Mirzapur','Nagarpur']},
+    {id:'kishoreganj', bn:'কিশোরগঞ্জ', en:'Kishoreganj', upazilas:['Kishoreganj Sadar','Bhairab','Kuliarchar','Pakundia']},
+  ]},
+  {id:'chattogram', bn:'চট্টগ্রাম', en:'Chattogram', districts:[
+    {id:'chattogram', bn:'চট্টগ্রাম', en:'Chattogram', upazilas:['Anwara','Banshkhali','Boalkhali','Patiya','Rangunia']},
+    {id:'coxsbazar', bn:'কক্সবাজার', en:"Cox's Bazar", upazilas:['Coxs Bazar Sadar','Chakaria','Maheshkhali','Teknaf','Ukhia']},
+    {id:'cumilla', bn:'কুমিল্লা', en:'Cumilla', upazilas:['Cumilla Sadar','Chandina','Daudkandi','Laksam','Muradnagar']},
+    {id:'feni', bn:'ফেনী', en:'Feni', upazilas:['Feni Sadar','Chhagalnaiya','Daganbhuiyan','Parshuram','Sonagazi']},
+  ]},
+  {id:'rajshahi', bn:'রাজশাহী', en:'Rajshahi', districts:[
+    {id:'rajshahi', bn:'রাজশাহী', en:'Rajshahi', upazilas:['Rajshahi Sadar','Bagha','Charghat','Puthia','Tanore']},
+    {id:'bogra', bn:'বগুড়া', en:'Bogura', upazilas:['Bogura Sadar','Adamdighi','Dhunat','Gabtali','Sherpur']},
+    {id:'pabna', bn:'পাবনা', en:'Pabna', upazilas:['Pabna Sadar','Bera','Bhangura','Chatmohar','Sujanagar']},
+  ]},
+  {id:'khulna', bn:'খুলনা', en:'Khulna', districts:[
+    {id:'khulna', bn:'খুলনা', en:'Khulna', upazilas:['Khulna Sadar','Batiaghata','Dacope','Dumuria','Rupsa']},
+    {id:'bagerhat', bn:'বাগেরহাট', en:'Bagerhat', upazilas:['Bagerhat Sadar','Chitalmari','Fakirhat','Kachua','Mongla']},
+    {id:'jashore', bn:'যশোর', en:'Jashore', upazilas:['Jashore Sadar','Abhaynagar','Bagherpara','Chaugachha','Keshabpur']},
+    {id:'satkhira', bn:'সাতক্ষীরা', en:'Satkhira', upazilas:['Satkhira Sadar','Assasuni','Debhata','Kalaroa','Tala']},
+  ]},
+  {id:'barishal', bn:'বরিশাল', en:'Barishal', districts:[
+    {id:'barishal', bn:'বরিশাল', en:'Barishal', upazilas:['Barishal Sadar','Agailjhara','Babuganj','Bakerganj','Banaripara']},
+    {id:'bhola', bn:'ভোলা', en:'Bhola', upazilas:['Bhola Sadar','Borhanuddin','Char Fasson','Daulatkhan','Lalmohan']},
+    {id:'pirojpur', bn:'পিরোজপুর', en:'Pirojpur', upazilas:['Pirojpur Sadar','Bhandaria','Kawkhali','Mathbaria','Nazirpur']},
+    {id:'patuakhali', bn:'পটুয়াখালী', en:'Patuakhali', upazilas:['Patuakhali Sadar','Bauphal','Dashmina','Galachipa','Kalapara']},
+    {id:'barguna', bn:'বরগুনা', en:'Barguna', upazilas:['Barguna Sadar','Amtali','Bamna','Betagi','Patharghata']},
+    {id:'jhalokati', bn:'ঝালকাঠি', en:'Jhalokati', upazilas:['Jhalokati Sadar','Kathalia','Nalchity','Rajapur']},
+  ]},
+  {id:'sylhet', bn:'সিলেট', en:'Sylhet', districts:[
+    {id:'sylhet', bn:'সিলেট', en:'Sylhet', upazilas:['Sylhet Sadar','Beanibazar','Bishwanath','Companiganj','Golapganj']},
+    {id:'moulvibazar', bn:'মৌলভীবাজার', en:'Moulvibazar', upazilas:['Moulvibazar Sadar','Barlekha','Kamalganj','Kulaura','Sreemangal']},
+    {id:'habiganj', bn:'হবিগঞ্জ', en:'Habiganj', upazilas:['Habiganj Sadar','Ajmiriganj','Bahubal','Baniachong','Chunarughat']},
+    {id:'sunamganj', bn:'সুনামগঞ্জ', en:'Sunamganj', upazilas:['Sunamganj Sadar','Bishwamvarpur','Chhatak','Derai','Jagannathpur']},
+  ]},
+  {id:'rangpur', bn:'রংপুর', en:'Rangpur', districts:[
+    {id:'rangpur', bn:'রংপুর', en:'Rangpur', upazilas:['Rangpur Sadar','Badarganj','Gangachara','Kaunia','Pirgachha']},
+    {id:'dinajpur', bn:'দিনাজপুর', en:'Dinajpur', upazilas:['Dinajpur Sadar','Birampur','Birganj','Chirirbandar','Phulbari']},
+    {id:'kurigram', bn:'কুড়িগ্রাম', en:'Kurigram', upazilas:['Kurigram Sadar','Bhurungamari','Char Rajibpur','Chilmari','Nageshwari']},
+  ]},
+  {id:'mymensingh', bn:'ময়মনসিংহ', en:'Mymensingh', districts:[
+    {id:'mymensingh', bn:'ময়মনসিংহ', en:'Mymensingh', upazilas:['Mymensingh Sadar','Bhaluka','Gaffargaon','Trishal','Muktagachha']},
+    {id:'jamalpur', bn:'জামালপুর', en:'Jamalpur', upazilas:['Jamalpur Sadar','Bakshiganj','Dewanganj','Islampur','Madarganj']},
+    {id:'netrokona', bn:'নেত্রকোণা', en:'Netrokona', upazilas:['Netrokona Sadar','Atpara','Barhatta','Durgapur','Kalmakanda']},
+    {id:'sherpur', bn:'শেরপুর', en:'Sherpur', upazilas:['Sherpur Sadar','Jhenaigati','Nakla','Nalitabari','Sreebardi']},
+  ]},
+];
 
-  // FIXED: Self-contained Travel PDF with standard header (same as income/expenses)
-  function renderTravelLocal(o){
-    const W=2480, H=3508, M=120;
-    const pages=[]; let cv, ctx, y=0;
-    function newPage(){
-      cv=document.createElement('canvas'); cv.width=W; cv.height=H; ctx=cv.getContext('2d');
-      ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
-      y=M;
-      // Standard header - same as history/report
-      const genDateObj = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
-      const dd = String(genDateObj.getDate()).padStart(2,'0'); const mm = String(genDateObj.getMonth()+1).padStart(2,'0'); const yyyy = genDateObj.getFullYear();
-      const dateStr = dd+'/'+mm+'/'+yyyy;
-      const timeStr = genDateObj.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
-      let profileLines=[];
-      try{
-        const lsN=localStorage.getItem('lifestyle_user_name')||''; const lsD=localStorage.getItem('lifestyle_user_designation')||''; const lsA=localStorage.getItem('lifestyle_user_address')||''; const lsM=localStorage.getItem('lifestyle_user_mobile')||'';
-        if(o.userName||lsN) profileLines.push('User: '+(o.userName||lsN));
-        if(o.userDesignation||lsD) profileLines.push('Designation: '+(o.userDesignation||lsD));
-        if(o.userAddress||lsA) profileLines.push('Address: '+(o.userAddress||lsA));
-        if(o.userMobile||lsM) profileLines.push('Mobile: '+(o.userMobile||lsM));
-      }catch(e){}
-      const devLines = ['Developer','Md. Abdus Salam','Bantra, Kalaroa, Satkhira','Mobile: +8801737265245','Email: salamwgp@gmail.com'];
-      ctx.fillStyle='#000'; ctx.font='700 52px sans-serif'; ctx.fillText((o.appName||'Lifestyle'), M, y); y+=60;
-      ctx.fillStyle='#2D2A26'; ctx.font='700 28px sans-serif'; ctx.fillText('Download: '+dateStr+' '+timeStr, M, y); y+=44;
-      ctx.font='400 26px sans-serif'; profileLines.forEach(pl=>{ ctx.fillText(pl, M, y); y+=36; });
-      let ry=M+20; const devX=W-M-700;
-      devLines.forEach((dl,i)=>{ ctx.font=(i===0?'700 30px ':'400 24px ')+'sans-serif'; ctx.fillStyle='#2D2A26'; ctx.fillText(dl, devX, ry); ry+=38; });
-      y=Math.max(y,ry)+30;
-      ctx.strokeStyle='#000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
-      ctx.fillStyle='#E65100'; ctx.fillRect(M,y,W-2*M,8); y+=20;
-      ctx.fillStyle='#E65100'; ctx.font='bold 32px sans-serif'; ctx.fillText('Travel Partner Report', M, y+30); y+=70;
-      pages.push(cv);
-    }
-    function ensureSpace(need){ if(y+need > H-100){ newPage(); } }
-    function drawSection(title){
-      ensureSpace(90);
-      ctx.fillStyle='#2D2A26'; ctx.fillRect(M, y, W-2*M, 70);
-      ctx.fillStyle='#fff'; ctx.font='bold 30px sans-serif'; ctx.fillText(title, M+20, y+45);
-      y+=90;
-    }
-    function drawField(label, value){
-      if(!value && value!==0) return;
-      ensureSpace(60);
-      ctx.fillStyle='#5C4A32'; ctx.font='bold 24px sans-serif';
-      const lab = label+': ';
-      ctx.fillText(lab, M, y);
-      ctx.fillStyle='#1A1A1A'; ctx.font='24px sans-serif';
-      const v = String(value);
-      ctx.fillText(v, M+ctx.measureText(lab).width, y);
-      y+=50;
-    }
-    newPage();
-    const list = o.list||[];
-    const single = o.single;
-    if(single){
-      drawSection('Travel Details - Only Marked Fields');
-      drawField('From Location', single.fromLocation);
-      drawField('Destination', single.destination);
-      drawField('From Date / শুরুর তারিখ', single.fromDate);
-      drawField('To Date / শেষ তারিখ', single.toDate);
-      drawField('Travel Status', single.travelStatus);
-    } else if(list.length>0){
-      list.forEach((tr, idx)=>{
-        drawSection('Trip '+(idx+1)+' - '+(tr.fromLocation||'')+' → '+(tr.destination||''));
-        drawField('From Location', tr.fromLocation);
-        drawField('Destination', tr.destination);
-        drawField('From Date', tr.fromDate);
-        drawField('To Date', tr.toDate);
-        drawField('Travel Status', tr.travelStatus);
-        y+=20;
-      });
-    }
-    return pages;
-  }
-  function handleTravelPdfFixed(mode, data){
-    mode=mode||'view';
-    try{
-      const genAt=new Date();
-      const userName = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name')) || 'User';
-      let o={userName, generatedAt: genAt, appName:'Lifestyle'};
-      if(data && data.id){ o.single=data; } else if(Array.isArray(data)){ o.list=data; } else if(data && (data.fromLocation||data.destination)){ o.single=data; } else { o.list=data||[]; }
-      const pages=renderTravelLocal(o);
-      const jpegs=pages.map(c=>{
-        const b64=c.toDataURL('image/jpeg',0.85).split(',')[1];
-        const bin=atob(b64), bytes=new Uint8Array(bin.length);
-        for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
-        return {bytes,w:c.width,h:c.height};
-      });
-      // Build PDF blob - inline buildPdfFromJpegs logic
-      const enc = new TextEncoder(), chunks = [], offsets = [];
-      let len = 0;
-      function push(x){ const b = typeof x === 'string' ? enc.encode(x) : x; chunks.push(b); len += b.length; }
-      const n = jpegs.length, total = 2 + 3*n;
-      push('%PDF-1.4\n');
-      offsets[1] = len; push('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n');
-      const kids = []; for(let i=0;i<n;i++) kids.push((3+i*3)+' 0 R');
-      offsets[2] = len; push('2 0 obj\n<< /Type /Pages /Kids [' + kids.join(' ') + '] /Count ' + n + ' >>\nendobj\n');
-      for(let i=0;i<n;i++){
-        const pg = 3+i*3, ct = pg+1, im = pg+2, j = jpegs[i];
-        offsets[pg] = len;
-        push(pg + ' 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im0 ' + im + ' 0 R >> >> /Contents ' + ct + ' 0 R >>\nendobj\n');
-        const content = 'q 595 0 0 842 0 0 cm /Im0 Do Q';
-        offsets[ct] = len;
-        push(ct + ' 0 obj\n<< /Length ' + content.length + ' >>\nstream\n' + content + '\nendstream\nendobj\n');
-        offsets[im] = len;
-        push(im + ' 0 obj\n<< /Type /XObject /Subtype /Image /Width ' + j.w + ' /Height ' + j.h + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + j.bytes.length + ' >>\nstream\n');
-        push(j.bytes); push('\nendstream\nendobj\n');
-      }
-      const xref = len;
-      let x = 'xref\n0 ' + (total+1) + '\n0000000000 65535 f \n';
-      for(let i=1;i<=total;i++) x += String(offsets[i]).padStart(10,'0') + ' 00000 n \n';
-      push(x + 'trailer\n<< /Size ' + (total+1) + ' /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF');
-      const blob = new Blob(chunks, {type:'application/pdf'});
-      const fname='Travel-Partner-'+(o.single ? (o.single.fromLocation+'-to-'+o.single.destination) : 'All-Trips')+'-'+(new Date().toISOString().slice(0,10))+'.pdf';
-      const title='Travel Partner - '+(o.single ? (o.single.fromLocation+' to '+o.single.destination) : 'All Trips');
-      if(mode==='download'){
-        const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=fname; document.body.appendChild(a); a.click(); setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
-        setToast && setToast('Travel PDF downloaded');
-      } else if(mode==='view'){
-        try{
-          const url=URL.createObjectURL(blob); window.open(url,'_blank'); setTimeout(()=>URL.revokeObjectURL(url), 60000);
-        }catch(e){ console.error(e); }
-      } else {
-        if(navigator.share && navigator.canShare && navigator.canShare({files:[new File([blob], fname, {type:'application/pdf'})]})){
-          const file=new File([blob], fname, {type:'application/pdf'});
-          navigator.share({files:[file], title:title}).catch(()=>{});
-        } else {
-          const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=fname; document.body.appendChild(a); a.click(); setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
-        }
-      }
-    }catch(e){ console.error('Travel PDF error', e); setToast && setToast('PDF error: '+e.message); }
-  }
-
-
-  function toggleItem(id){
-    setSelected(prev=>{
-      const next = prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id];
-      try{ localStorage.setItem('travel_checklist_selected', JSON.stringify(next)); }catch(e){}
-      return next;
-    });
-  }
-  function toggleGroup(gid){ setOpenGroups(prev=> ({...prev, [gid]: !prev[gid]})); }
-
-  const filteredGroups = TRAVEL_GROUPS.map(g=>{
-    let items = g.items;
-    // Phase 4 Fix: Multi-select - show all items, don't hide unselected
-    // User wants to select multiple items freely, save only selected ones
-    if(search){
-      const s = search.toLowerCase();
-      const filteredItems = items.filter(it=> it.label.toLowerCase().includes(s));
-      if(filteredItems.length===0 && !g.name.toLowerCase().includes(s) && !g.nameEn.toLowerCase().includes(s)) return null;
-      return {...g, items: filteredItems.length>0 ? filteredItems : items};
-    }
-    if(items.length===0) return null;
-    return {...g, items};
-  }).filter(Boolean);
-
-  function handleSave(){
-    setSaving(true);
-    const isValidTrip = fromLocation.trim() || destination.trim();
-    const id = editingTravelId || (typeof uid==='function' ? uid() : Date.now().toString());
-    const data = {
-      id: id,
-      fromLocation,
-      destination,
-      fromDate,
-      toDate,
-      travelStatus,
-      selected,
-      othersNote,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      type: 'travel_checklist'
-    };
-    try{
-      // Save to travel partner list (multiple trips)
-      try{
-        const prevList = JSON.parse(localStorage.getItem('travel_partner_list')||'[]');
-        let newList;
-        const existingIdx = prevList.findIndex(t=>t.id===id);
-        if(existingIdx>=0){
-          newList = [...prevList];
-          newList[existingIdx] = data;
-        } else {
-          newList = [data, ...prevList];
-        }
-        localStorage.setItem('travel_partner_list', JSON.stringify(newList));
-        setTravelList(newList);
-        localStorage.setItem('travel_from_loc', fromLocation);
-        localStorage.setItem('travel_dest', destination);
-        localStorage.setItem('travel_from_date', fromDate);
-        localStorage.setItem('travel_to_date', toDate);
-        localStorage.setItem('travel_others_note', othersNote);
-      }catch(e){}
-      const user = firebase.auth().currentUser;
-      if(user && firebase.firestore){
-        firebase.firestore().collection('travel_checklists').doc(data.id).set({...data, uid: user.uid})
-        .then(()=>{
-          setToast && setToast(lang==='en' ? 'Travel saved - '+(fromLocation+' → '+destination) : 'ভ্রমণ সেভ হয়েছে - '+(fromLocation+' → '+destination));
-          setSaving(false);
-          setEditingTravelId(null);
-        }).catch(e=>{
-          setToast && setToast('Saved locally: '+e.message);
-          setSaving(false);
-        });
-      } else {
-        try{ localStorage.setItem('travel_checklist_'+data.id, JSON.stringify(data)); }catch(e){}
-        setToast && setToast(lang==='en' ? 'Travel saved - '+(fromLocation||'Trip') : 'ভ্রমণ সেভ হয়েছে');
-        setSaving(false);
-        setEditingTravelId(null);
-      }
-    }catch(e){ setSaving(false); setToast && setToast('Error: '+e.message); }
-  }
-
-  function handleNewTrip(){
-    setFromLocation('');
-    setDestination('');
-    setFromDate(today());
-    setToDate(today());
-    setTravelStatus('Not Yet');
-    setSelected([]);
-    setOthersNote('');
-    setEditingTravelId(null);
-    try{
-      localStorage.removeItem('travel_from_loc');
-      localStorage.removeItem('travel_dest');
-      localStorage.removeItem('travel_from_date');
-      localStorage.removeItem('travel_to_date');
-    }catch(e){}
-    setToast && setToast(lang==='en' ? 'New trip form cleared' : 'নতুন ভ্রমণ ফর্ম খালি করা হয়েছে');
-  }
-
-  function handleLoadTrip(trip){
-    setFromLocation(trip.fromLocation||'');
-    setDestination(trip.destination||'');
-    setFromDate(trip.fromDate||'');
-    setToDate(trip.toDate||'');
-    setTravelStatus(trip.travelStatus||'Not Yet');
-    setSelected(trip.selected||[]);
-    setOthersNote(trip.othersNote||'');
-    setEditingTravelId(trip.id);
-    setShowTravelList(false);
-    setToast && setToast('Loaded: '+(trip.fromLocation+' → '+trip.destination));
-    window.scrollTo(0,0);
-  }
-
-  function handleDeleteTrip(id){
-    if(confirm('এই ভ্রমণ ডিলিট করবেন?')){
-      try{
-        const prevList = JSON.parse(localStorage.getItem('travel_partner_list')||'[]');
-        const newList = prevList.filter(t=>t.id!==id);
-        localStorage.setItem('travel_partner_list', JSON.stringify(newList));
-        setTravelList(newList);
-        setToast && setToast('Deleted');
-      }catch(e){}
-    }
-  }
-
-  
-  function togglePacked(tripId, itemId){
-    try{
-      const updated = travelList.map(tr=>{
-        if(tr.id!==tripId) return tr;
-        let packed = tr.packed || [];
-        if(packed.includes(itemId)){
-          packed = packed.filter(id=>id!==itemId);
-        } else {
-          packed = [...packed, itemId];
-        }
-        return {...tr, packed};
-      });
-      setTravelList(updated);
-      saveLS('lifestyle_travel_list', updated);
-      try{ const u=window._lastGoogleUser; if(u) syncToCloud && syncToCloud('lifestyle_travel_list', updated, u.uid||u.email); }catch(e){}
-    }catch(e){ console.error(e); }
-  }
-
-  function toggleTravelStatus(id, status){
-    try{
-      const prevList = JSON.parse(localStorage.getItem('travel_partner_list')||'[]');
-      const newList = prevList.map(t=> t.id===id ? {...t, travelStatus: status, updatedAt: new Date().toISOString()} : t);
-      localStorage.setItem('travel_partner_list', JSON.stringify(newList));
-      setTravelList(newList);
-      setToast && setToast(status==='Travel Done' ? '✓ Travel Done - সবুজ হয়েছে' : 'Not Yet - লাল হয়েছে');
-    }catch(e){}
-  }
-
-
-  return h('div', {className:'bg-[#FFFEF7] -m-4 p-0'},
-    h('div', {className:'p-4 bg-[#FFFEF7] space-y-4'},
-      // NEW: Travel Partner - Trip Details (From Location, Destination, Dates, Status)
-      h('div', {className:'bg-white border-2 border-[#E65100] rounded-[16px] p-4 space-y-3'},
-        h('div', {className:'flex items-center justify-between'},
-          h('p', {className:'text-[13px] font-bold text-[#BF360C]'}, 'Travel Partner / ভ্রমণ পার্টনার ('+travelList.length+')'),
-          h('div', {className:'flex gap-2'},
-            h('button', {onClick:()=>setShowTravelList(!showTravelList), style:{backgroundColor:'#FFF3E0', color:'#BF360C'}, className:'px-3 py-1.5 rounded-full text-[11px] font-bold border'}, showTravelList ? 'Hide List' : 'Show List ('+travelList.length+')'),
-            h('button', {onClick:handleNewTrip, style:{backgroundColor:'#E65100', color:'white'}, className:'px-3 py-1.5 rounded-full text-[11px] font-bold'}, '+ New Trip')
-          )
-        ),
-        editingTravelId ? h('p', {className:'text-[11px] text-[#2E7D32] font-bold bg-[#E8F5E9] p-2 rounded-[8px]'}, 'এডিট করছেন: '+fromLocation+' → '+destination) : h('p', {className:'text-[11px] text-[#8B7355] bg-[#FFF8E1] p-2 rounded-[8px]'}, 'নতুন ভ্রমণ যোগ করুন - From → Destination'),
-        h('div', {className:'grid grid-cols-2 gap-3'},
-          h('div', null,
-            h('label', {className:'text-[11px] font-bold text-[#8B7355] mb-1.5 block'}, 'From Location'),
-            h('input', {value:fromLocation, onChange:e=>setFromLocation(e.target.value), placeholder:'Dhaka / ঢাকা', className:'w-full bg-white border border-[#E8E6DC] rounded-[12px] px-4 py-3 text-[13px] text-[#1A1A1A] outline-none'})
-          ),
-          h('div', null,
-            h('label', {className:'text-[11px] font-bold text-[#8B7355] mb-1.5 block'}, 'Destination'),
-            h('input', {value:destination, onChange:e=>setDestination(e.target.value), placeholder:'Cox Bazar / কক্সবাজার', className:'w-full bg-white border border-[#E8E6DC] rounded-[12px] px-4 py-3 text-[13px] text-[#1A1A1A] outline-none'})
-          )
-        ),
-        h('div', {className:'grid grid-cols-2 gap-3'},
-          h('div', null,
-            h('label', {className:'text-[11px] font-bold text-[#8B7355] mb-1.5 block'}, 'শুরুর তারিখ'),
-            h('div', {className:'bg-white border border-[#E8E6DC] rounded-[12px] px-4 py-2 flex items-center justify-between'},
-              h('input', {type:'date', value:fromDate, onChange:e=>setFromDate(e.target.value), className:'flex-1 bg-transparent text-[13px] text-[#1A1A1A] outline-none'}),
-              h('span', {className:'text-[12px] text-[#8B7355]'}, '▼')
-            )
-          ),
-          h('div', null,
-            h('label', {className:'text-[11px] font-bold text-[#8B7355] mb-1.5 block'}, 'শেষ তারিখ'),
-            h('div', {className:'bg-white border border-[#E8E6DC] rounded-[12px] px-4 py-2 flex items-center justify-between'},
-              h('input', {type:'date', value:toDate, onChange:e=>setToDate(e.target.value), className:'flex-1 bg-transparent text-[13px] text-[#1A1A1A] outline-none'}),
-              h('span', {className:'text-[12px] text-[#8B7355]'}, '▼')
-            )
-          )
-        ),
-        h('div', {className:'space-y-2'},
-          h('label', {className:'text-[11px] font-bold text-[#5C4A32] block'}, 'Travel Status / ভ্রমণ স্ট্যাটাস'),
-          h('div', {className:'grid grid-cols-2 gap-3'},
-            h('button', {onClick:()=>setTravelStatus('Travel Done'), style: travelStatus==='Travel Done' ? {backgroundColor:'#2E7D32', color:'white', borderColor:'#2E7D32'} : {backgroundColor:'white', color:'#2E7D32', borderColor:'#C8E6C9'}, className:'py-3 rounded-[12px] border-2 text-[12px] font-bold flex items-center justify-center gap-2'},
-              h('span', null, '✓'), h('span', null, 'Travel Done')
-            ),
-            h('button', {onClick:()=>setTravelStatus('Not Yet'), style: travelStatus==='Not Yet' ? {backgroundColor:'#B71C1C', color:'white', borderColor:'#B71C1C'} : {backgroundColor:'white', color:'#B71C1C', borderColor:'#FFCDD2'}, className:'py-3 rounded-[12px] border-2 text-[12px] font-bold flex items-center justify-center gap-2'},
-              h('span', null, '✕'), h('span', null, 'Not Yet')
-            )
-          ),
-          h('p', {className:'text-[10px] text-center '+(travelStatus==='Travel Done' ? 'text-[#2E7D32] font-bold' : 'text-[#B71C1C] font-bold')}, travelStatus==='Travel Done' ? '✓ সবুজ - ভ্রমণ সম্পন্ন হয়েছে' : '✕ লাল - এখনো হয়নি')
-        ),
-        showTravelList && travelList.length>0 ? h('div', {className:'space-y-2 max-h-[300px] overflow-y-auto pt-2 border-t border-[#F3E8D3]'},
-          travelList.map(tr=>
-            h('div', {key:tr.id, className:'bg-[#FFFEF7] border rounded-[12px] p-3 space-y-2 '+(tr.travelStatus==='Travel Done' ? 'border-[#4CAF50] bg-[#E8F5E9]' : 'border-[#EF9A9A] bg-[#FFEBEE]')},
-              h('div', {className:'flex items-center justify-between'},
-                h('div', {className:'flex-1'},
-                  h('p', {className:'text-[18px] font-extrabold text-[#1A1A1A] leading-tight tracking-tight'}, (tr.fromLocation||'?')+' → '+(tr.destination||'?')),
-                  h('p', {className:'text-[13px] font-bold text-[#333] mt-1'}, formatDMY(tr.fromDate)+' → '+formatDMY(tr.toDate)+' | '+(tr.selected?.length||0)+' items'),
-                  tr.selected && tr.selected.length>0 ? h('div', {className:'mt-2 bg-white rounded-[10px] p-2 border border-[#E8E6DC]'}, tr.selected.map((sid, idx)=>{ try{ let lbl=sid; TRAVEL_GROUPS.forEach(g=>{ g.items.forEach(it=>{ if(it.id===sid) lbl=it.label; }); }); const isPacked = tr.packed && tr.packed.includes(sid); return h('div', {key:sid, className:'flex items-start gap-2 py-1.5 border-b border-[#F3E8D3]/50 last:border-0 cursor-pointer '+(isPacked ? 'bg-green-50' : ''), onClick:()=>togglePacked(tr.id, sid)}, h('div', {className:'w-[18px] h-[18px] rounded-[4px] border-2 flex items-center justify-center shrink-0 mt-[1px] '+(isPacked ? 'bg-[#2E7D32] border-[#2E7D32]' : 'border-[#B0B0B0] bg-white')}, isPacked ? h('span', {className:'text-white text-[11px] font-bold'}, '✓') : null), h('span', {className:'text-[11px] font-bold '+(isPacked ? 'text-[#2E7D32] line-through' : 'text-[#E65100]')+' min-w-[18px]'}, (idx+1)+'.'), h('span', {className:'text-[12px] font-medium leading-snug '+(isPacked ? 'text-[#2E7D32] line-through' : 'text-[#1A1A1A]')}, lbl)); }catch(e){ return h('div', {key:sid, className:'text-[12px]'}, sid); } })) : null,
-                  h('p', {className:'text-[10px] font-bold '+(tr.travelStatus==='Travel Done' ? 'text-[#2E7D32]' : 'text-[#B71C1C]')}, tr.travelStatus)
-                ),
-                h('div', {className:'flex gap-1'},
-                  h('button', {onClick:()=>toggleTravelStatus(tr.id, tr.travelStatus==='Travel Done' ? 'Not Yet' : 'Travel Done'), style: tr.travelStatus==='Travel Done' ? {backgroundColor:'#B71C1C', color:'white'} : {backgroundColor:'#2E7D32', color:'white'}, className:'px-2 py-1.5 rounded-full text-[9px] font-bold'}, tr.travelStatus==='Travel Done' ? 'Not Yet' : 'Done'),
-                  h('button', {onClick:()=>handleLoadTrip(tr), style:{backgroundColor:'#1E4538', color:'white'}, className:'px-2 py-1.5 rounded-full text-[9px] font-bold'}, 'Load'),
-                  h('button', {onClick:()=>handleDeleteTrip(tr.id), style:{backgroundColor:'white', color:'#B71C1C'}, className:'px-2 py-1.5 rounded-full text-[9px] font-bold border'}, 'X')
-                )
-              )
-            )
-          )
-        ) : (showTravelList ? h('p', {className:'text-[11px] text-gray-500 text-center py-2'}, 'কোনো ভ্রমণ সেভ নেই') : null)
-      ),
-      h('div', {className:'flex items-center justify-between'},
-        h('span', {style:{color:'white', backgroundColor:'#E65100'}, className:'px-3 py-1 rounded-full bg-[#E65100] text-white text-[11px] font-bold'}, selected.length + ' selected / ' + TRAVEL_GROUPS.reduce((a,g)=>a+g.items.length,0) + ' total'),
-        h('button', {onClick:()=>{ setSelected([]); setOthersNote(''); try{ localStorage.removeItem('travel_checklist_selected'); localStorage.removeItem('travel_others_note'); }catch(e){} }, style:{color:'#BF360C'}, className:'text-[11px] font-bold underline text-[#BF360C]'}, lang==='en' ? 'Clear All' : 'সব মুছুন')
-      ),
-      h('div', {className:'relative'},
-        h('span', {className:'absolute left-3 top-1/2 -translate-y-1/2 text-[14px]'}, '🔍'),
-        h('input', {value:search, onChange:e=>setSearch(e.target.value), placeholder: lang==='en' ? 'Search items... e.g., Mobile, Shirt' : 'আইটেম খুঁজুন... যেমন: মোবাইল, জামা', className:'w-full bg-white border border-[#E8E6DC] rounded-[12px] pl-9 pr-4 py-2.5 text-[13px] text-[#1A1A1A] outline-none'})
-      ),
-      filteredGroups.map(group=>
-        group.id==='others' ? h('div', {key:group.id, className:'bg-[#FFF8E1] border-2 border-[#FFCC80] rounded-[16px] overflow-hidden'},
-          h('button', {onClick:()=>{ setShowOthers(!showOthers); toggleGroup(group.id); }, className:'w-full flex items-center justify-between p-4 text-left'},
-            h('span', {style:{color:'#E65100'}, className:'flex items-center gap-2 text-[13px] font-bold'}, h('span', null, '📌'), h('span', null, lang==='en' ? 'Others / অন্যান্য' : 'অন্যান্য')),
-            h('span', {className:'flex items-center gap-2'}, h('span', {className:'text-[10px] text-[#8B7355]'}, group.items.length + ' items'), h('span', {style:{color:'#1A1A1A'}, className:'text-[12px]'}, (showOthers || openGroups[group.id]) ? '∧' : '∨'))
-          ),
-          (showOthers || openGroups[group.id]) ? h('div', {className:'px-3 pb-4 space-y-3 bg-white'},
-            h('div', {className:'pt-3'},
-              h('label', {className:'text-[11px] font-bold text-[#8B7355] mb-2 block'}, lang==='en' ? '📝 Write other travel items / notes' : '📝 অন্যান্য জিনিস / নোট লিখুন'),
-              h('textarea', {value:othersNote, onChange:e=>setOthersNote(e.target.value), placeholder: lang==='en' ? 'e.g., Extra charger, gifts, umbrella...' : 'যেমন: অতিরিক্ত চার্জার, উপহার, ছাতা...', rows:4, className:'w-full bg-[#FFFEF7] border border-[#E8E6DC] rounded-[12px] px-4 py-3 text-[13px] text-[#1A1A1A] outline-none resize-none'})
-            ),
-            h('p', {className:'text-[10px] text-[#8B7355]'}, lang==='en' ? 'This note will be saved with your checklist' : 'এই নোটটি আপনার চেকলিস্টের সাথে সেভ হবে')
-          ) : null
-        ) :
-        h('div', {key:group.id, className:'bg-[#FDF8EF] border border-[#F3E8D3] rounded-[16px] overflow-hidden'},
-          h('button', {onClick:()=>toggleGroup(group.id), className:'w-full flex items-center justify-between p-4 text-left'},
-            h('span', {style:{color:'#5C4A32'}, className:'flex items-center gap-2 text-[13px] font-bold'}, h('span', null, group.icon), h('span', null, lang==='en' ? group.nameEn : group.name)),
-            h('span', {className:'flex items-center gap-2'}, h('span', {className:'text-[10px] text-[#8B7355]'}, group.items.filter(it=>selected.includes(it.id)).length + '/' + group.items.length), h('span', {style:{color:'#1A1A1A'}, className:'text-[12px]'}, openGroups[group.id] ? '∧' : '∨'))
-          ),
-          openGroups[group.id] ? h('div', {className:'px-3 pb-3 space-y-2'},
-            group.items.map(it=>{
-              const isSelected = selected.includes(it.id);
-              return h('button', {key:it.id, onClick:()=>toggleItem(it.id), style: isSelected ? {backgroundColor:'#E8F5E9', borderColor:'#4CAF50'} : {backgroundColor:'#FFEBEE', borderColor:'#EF9A9A'}, className: 'w-full flex items-center gap-3 p-3 rounded-[12px] border-2 text-left transition-colors ' + (isSelected ? 'bg-[#E8F5E9] border-[#4CAF50]' : 'bg-[#FFEBEE] border-[#EF9A9A]')},
-                h('span', {style: isSelected ? {color:'white', backgroundColor:'#4CAF50'} : {color:'white', backgroundColor:'#F44336'}, className:'w-6 h-6 rounded-[6px] flex items-center justify-center text-[12px] font-bold'}, isSelected ? '✓' : '✕'),
-                h('span', {className:'text-[14px]'}, it.icon),
-                h('span', {style:{color: isSelected ? '#1B5E20' : '#B71C1C'}, className:'text-[13px] font-medium ' + (isSelected ? 'text-[#1B5E20] font-bold' : 'text-[#B71C1C]')}, it.label)
-              )
-            })
-          ) : null
-        )
-      ),
-      h('div', {className:'bg-white rounded-[16px] p-3 border border-[#F3E8D3] space-y-3 mt-2'},
-        h('p', {className:'text-[11px] font-bold text-[#8B7355] text-center'}, 'Travel PDF - শুধু মার্ক করা ফিল্ডগুলো PDF এ আসবে'),
-        h('div', {className:'grid grid-cols-3 gap-2'},
-          h('button', {onClick:()=>{ const data = {fromLocation, destination, fromDate, toDate, travelStatus}; handleTravelPdfFixed('download', data); }, className:'py-2.5 rounded-[12px] bg-[#2D2A26] text-white text-[11px] font-bold'}, '📄 PDF'),
-          h('button', {onClick:()=>{ const data = {fromLocation, destination, fromDate, toDate, travelStatus}; handleTravelPdfFixed('view', data); }, className:'py-2.5 rounded-[12px] bg-white border border-[#F3E8D3] text-[#2D2A26] text-[11px] font-bold'}, '👁️ View'),
-          h('button', {onClick:()=>{ const data = {fromLocation, destination, fromDate, toDate, travelStatus}; handleTravelPdfFixed('share', data); }, className:'py-2.5 rounded-[12px] bg-[#C9A86A] text-[#2D2A26] text-[11px] font-bold'}, '📤 Share')
-        ),
-        travelList.length>0 ? h('div', {className:'grid grid-cols-3 gap-2 pt-2 border-t border-[#F3E8D3]'},
-          h('button', {onClick:()=>handleTravelPdfFixed('download', travelList), className:'py-2.5 rounded-[12px] bg-[#E65100] text-white text-[11px] font-bold'}, '📄 All PDF'),
-          h('button', {onClick:()=>handleTravelPdfFixed('view', travelList), className:'py-2.5 rounded-[12px] bg-white border border-[#FFCC80] text-[#BF360C] text-[11px] font-bold'}, '👁️ All View'),
-          h('button', {onClick:()=>handleTravelPdfFixed('share', travelList), className:'py-2.5 rounded-[12px] bg-[#FFF3E0] border border-[#FFCC80] text-[#BF360C] text-[11px] font-bold'}, '📤 All Share')
-        ) : null
-      ),
-      h('div', {className:'grid grid-cols-2 gap-3 pt-4 pb-6'},
-        h('button', {onClick:()=>{ try{ setAddType && setAddType(null); }catch(e){} }, style:{color:'#5C5C5C', backgroundColor:'#FFFEF7'}, className:'py-4 rounded-[16px] bg-[#FFFEF7] border border-[#E8E6DC] text-[15px] font-bold'}, 'Cancel'),
-        h('button', {onClick:handleSave, disabled:saving, style:{color:'white', backgroundColor:'#E65100'}, className:'py-4 rounded-[16px] bg-[#E65100] text-white text-[15px] font-bold disabled:opacity-50'}, saving ? 'Saving...' : (lang==='en' ? 'Save Checklist' : 'সেভ করুন'))
-      )
-    )
-  );
-}
+function toTitleCase(str){ try{ if(!str) return ''; return str.replace(/_/g,' ').replace(/\b\w+/g, function(w){ return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase(); }); }catch(e){ return str; } }
+function formatDMY(d){ try{ if(!d) return ''; const parts=d.split('-'); if(parts.length!==3) return d; return parts[2]+'/'+parts[1]+'/'+parts[0]; }catch(e){ return d; } }
+function today(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 
 
 
@@ -4550,6 +4125,324 @@ function MarketSurveyManager({t, lang, setToast}){
   );
 }
 
+
+function TravelManager({t, lang, setToast}){
+    const TRAVEL_GROUPS = [
+    {id:'electronics', name:'ইলেকট্রনিক্স', nameEn:'Electronics', icon:'📱', items:[
+      {id:'mobile', label:'মোবাইল – Mobile', icon:'📱'},
+      {id:'tab', label:'ট্যাব – Tab', icon:'📲'},
+      {id:'laptop', label:'ল্যাপটপ – Laptop', icon:'💻'},
+      {id:'powerbank', label:'পাওয়ার ব্যাংক – Power Bank', icon:'🔋'},
+      {id:'charger', label:'চার্জার – Charger', icon:'🔌'},
+      {id:'multiplug', label:'মাল্টি প্লাগ – Multi Plug', icon:'🔌'},
+      {id:'headphone', label:'হেডফোন – Headphone', icon:'🎧'},
+      {id:'pendrive', label:'পেনড্রাইভ – Pen Drive', icon:'💾'},
+      {id:'hdd', label:'পোর্টেবল হার্ডডিস্ক – Portable Hard Disk', icon:'🗄️'},
+    ]},
+    {id:'clothing', name:'পোশাক', nameEn:'Clothing', icon:'👕', items:[
+      {id:'shirt', label:'জামা – Shirt', icon:'👔'},
+      {id:'pants', label:'প্যান্ট – Pants', icon:'👖'},
+      {id:'tshirt', label:'টিশার্ট – T-shirt', icon:'👕'},
+      {id:'underwear', label:'জাঙ্গিয়া – Underwear', icon:'🩲'},
+      {id:'socks', label:'মোজা – Socks', icon:'🧦'},
+      {id:'winter', label:'শীতের কাপড় – Winter Clothes', icon:'🧥'},
+      {id:'shorts', label:'হাফ প্যান্ট – Shorts', icon:'🩳'},
+      {id:'lungi', label:'লুঙ্গি – Lungi', icon:'🧣'},
+      {id:'gamchha', label:'গামছা – Gamchha (Towel)', icon:'🧻'},
+    ]},
+    {id:'shoes', name:'জুতা ও হেলমেট', nameEn:'Shoes & Helmet', icon:'👟', items:[
+      {id:'shoes', label:'জুতা – Shoes', icon:'👟'},
+      {id:'shoes2', label:'জুতা (২য় জোড়া) – Shoes (2nd pair)', icon:'👞'},
+      {id:'helmet', label:'হেলমেট – Helmet', icon:'🪖'},
+      {id:'shoe_brush', label:'জুতার ব্রাশ – Shoe Brush', icon:'🪥'},
+      {id:'shoe_polish', label:'জুতার কালি – Shoe Polish', icon:'🧴'},
+    ]},
+    {id:'personal', name:'ব্যক্তিগত ব্যবহার', nameEn:'Personal Use', icon:'🧼', items:[
+      {id:'shaving', label:'শেভিং কিটস – Shaving Kit', icon:'🪒'},
+      {id:'shampoo', label:'শ্যাম্পু – Shampoo', icon:'🧴'},
+      {id:'toothbrush', label:'টুথ ব্রাশ – Toothbrush', icon:'🪥'},
+      {id:'toothpaste', label:'টুথ পেস্ট – Toothpaste', icon:'🦷'},
+      {id:'nailcutter', label:'নেল কাটার – Nail Cutter', icon:'✂️'},
+      {id:'medicine', label:'ঔষধ – Medicine', icon:'💊'},
+      {id:'cigarette', label:'সিগারেট – Cigarette', icon:'🚬'},
+      {id:'lighter', label:'লাইটার – Lighter', icon:'🔥'},
+    ]},
+    {id:'papers', name:'কাগজপত্র ও টাকা', nameEn:'Papers & Money', icon:'📄', items:[
+      {id:'atm', label:'এটিএম কার্ড – ATM Card', icon:'💳'},
+      {id:'bike_papers', label:'বাইকের কাগজপত্র – Bike Papers', icon:'🏍️'},
+      {id:'license', label:'ড্রাইভিং লাইসেন্স – Driving License', icon:'🪪'},
+      {id:'passport_photos', label:'পাসপোর্ট সাইজ ছবি – Passport-size Photos', icon:'🖼️'},
+      {id:'nid_copy', label:'NID ফটোকপি – NID Photocopy', icon:'🪪'},
+      {id:'visiting_card', label:'ভিজিটিং কার্ড – Visiting Card', icon:'📇'},
+    ]},
+    {id:'stationery', name:'লেখার সরঞ্জাম', nameEn:'Writing Tools', icon:'Edit', items:[
+      {id:'pen', label:'কলম – Pen', icon:'🖊️'},
+      {id:'pad', label:'প্যাড – Notepad', icon:'📝'},
+      {id:'diary', label:'ডায়েরি – Diary', icon:'📓'},
+    ]},
+    {id:'others', name:'অন্যান্য', nameEn:'Others', icon:'📌', items:[
+      {id:'other_note', label:'অন্যান্য নোট / Other Notes', icon:'📝'},
+    ]},
+  ];
+
+
+  const [activeTab, setActiveTab] = React.useState('new'); // new, saved, done
+  const [travelList, setTravelList] = React.useState(()=>{ try{ return JSON.parse(localStorage.getItem('lifestyle_travel_list')||'[]'); }catch(e){ return []; } });
+  
+  // From fields
+  const [fromDiv, setFromDiv] = React.useState('');
+  const [fromDist, setFromDist] = React.useState('');
+  const [fromUpa, setFromUpa] = React.useState('');
+  const [fromDate, setFromDate] = React.useState(()=>today());
+  
+  // To fields
+  const [toDiv, setToDiv] = React.useState('');
+  const [toDist, setToDist] = React.useState('');
+  const [toUpa, setToUpa] = React.useState('');
+  const [toDate, setToDate] = React.useState(()=>today());
+  
+  const [selected, setSelected] = React.useState([]);
+  const [search, setSearch] = React.useState('');
+  const [openGroups, setOpenGroups] = React.useState({electronics:true});
+  const [editingId, setEditingId] = React.useState(null);
+  const [othersNote, setOthersNote] = React.useState(()=>{ try{ return localStorage.getItem('travel_others_note')||''; }catch(e){ return ''; } });
+
+  React.useEffect(()=>{ try{ localStorage.setItem('lifestyle_travel_list', JSON.stringify(travelList)); }catch(e){} }, [travelList]);
+
+  const getDistricts = (divId)=>{ const d=BD_DIVISIONS.find(x=>x.id===divId); return d? d.districts: []; };
+  const getUpazilas = (divId, distId)=>{ const dists=getDistricts(divId); const di=dists.find(x=>x.id===distId); return di? di.upazilas: []; };
+
+  const buildLocationString = (div, dist, upa)=>{
+    let parts=[];
+    if(upa) parts.push(upa);
+    if(dist){ const d=getDistricts(div).find(x=>x.id===dist); parts.push(d? (d.bn||d.en): dist); }
+    if(div){ const dv=BD_DIVISIONS.find(x=>x.id===div); parts.push(dv? (dv.bn||dv.en): div); }
+    return parts.join(', ') || '';
+  };
+
+  const handleSelect = (id)=>{ setSelected(prev=> prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]); };
+
+  const handleSave = ()=>{
+    const fromLoc = buildLocationString(fromDiv, fromDist, fromUpa);
+    const toLoc = buildLocationString(toDiv, toDist, toUpa);
+    if(!fromLoc || !toLoc){ setToast && setToast('From এবং Destination সিলেক্ট করুন'); return; }
+    if(selected.length===0){ setToast && setToast('অন্তত ১টি জিনিস সিলেক্ট করুন'); return; }
+    const trip={
+      id: editingId || Date.now().toString(),
+      fromLocation: fromLoc,
+      destination: toLoc,
+      fromDiv, fromDist, fromUpa,
+      toDiv, toDist, toUpa,
+      fromDate, toDate,
+      selected,
+      packed: editingId ? (travelList.find(x=>x.id===editingId)?.packed || []) : [],
+      travelStatus: 'Saved',
+      createdAt: new Date().toISOString()
+    };
+    if(editingId){
+      setTravelList(prev=> prev.map(x=> x.id===editingId ? trip : x));
+      setToast && setToast('Trip Updated ✓');
+    }else{
+      setTravelList(prev=> [trip, ...prev]);
+      setToast && setToast('Trip Saved ✓');
+    }
+    handleCancel();
+    setActiveTab('saved');
+  };
+
+  const handleCancel = ()=>{
+    setFromDiv(''); setFromDist(''); setFromUpa('');
+    setToDiv(''); setToDist(''); setToUpa('');
+    setFromDate(today()); setToDate(today());
+    setSelected([]); setEditingId(null); setSearch('');
+  };
+
+  const togglePacked = (tripId, itemId)=>{
+    setTravelList(prev=> prev.map(tr=>{
+      if(tr.id!==tripId) return tr;
+      let packed = tr.packed || [];
+      if(packed.includes(itemId)) packed = packed.filter(x=>x!==itemId);
+      else packed = [...packed, itemId];
+      return {...tr, packed};
+    }));
+  };
+
+  const markDone = (id)=>{
+    setTravelList(prev=> prev.map(tr=> tr.id===id ? {...tr, travelStatus:'Travel Done'} : tr));
+    setToast && setToast('Travel Done ✓');
+  };
+
+  const markUndone = (id)=>{
+    setTravelList(prev=> prev.map(tr=> tr.id===id ? {...tr, travelStatus:'Saved'} : tr));
+  };
+
+  const deleteTrip = (id)=>{
+    if(!confirm('Delete this trip?')) return;
+    setTravelList(prev=> prev.filter(x=>x.id!==id));
+    setToast && setToast('Deleted');
+  };
+
+  const loadTrip = (tr)=>{
+    setFromDiv(tr.fromDiv||''); setFromDist(tr.fromDist||''); setFromUpa(tr.fromUpa||'');
+    setToDiv(tr.toDiv||''); setToDist(tr.toDist||''); setToUpa(tr.toUpa||'');
+    setFromDate(tr.fromDate||today()); setToDate(tr.toDate||today());
+    setSelected(tr.selected||[]); setEditingId(tr.id);
+    setActiveTab('new');
+    window.scrollTo(0,0);
+  };
+
+  const filteredGroups = TRAVEL_GROUPS.map(g=>{
+    let items=g.items;
+    if(search){
+      const s=search.toLowerCase();
+      const filtered=items.filter(it=> it.label.toLowerCase().includes(s));
+      if(filtered.length===0 && !g.name.toLowerCase().includes(s) && !g.nameEn.toLowerCase().includes(s)) return null;
+      return {...g, items: filtered.length>0 ? filtered : items};
+    }
+    return {...g, items};
+  }).filter(Boolean);
+
+  const savedTrips = travelList.filter(tr=> tr.travelStatus!=='Travel Done');
+  const doneTrips = travelList.filter(tr=> tr.travelStatus==='Travel Done');
+
+  return h('div', {className:'bg-[#FFFEF7] -m-4 p-0 min-h-[600px]'},
+    // TAB HEADER
+    h('div', {className:'flex gap-2 p-3 bg-white border-b border-[#F3E8D3] sticky top-0 z-10'},
+      h('button', {onClick:()=>setActiveTab('new'), className:'flex-1 py-2.5 rounded-full text-[13px] font-bold transition-colors '+(activeTab==='new' ? 'bg-[#2E7D32] text-white' : 'bg-[#F9F6F0] text-[#8B7355] border border-[#E8E6DC]')}, 'New Trip'),
+      h('button', {onClick:()=>setActiveTab('saved'), className:'flex-1 py-2.5 rounded-full text-[13px] font-bold transition-colors relative '+(activeTab==='saved' ? 'bg-[#E65100] text-white' : 'bg-[#F9F6F0] text-[#8B7355] border border-[#E8E6DC]')}, 'Save Trip ('+savedTrips.length+')'),
+      h('button', {onClick:()=>setActiveTab('done'), className:'flex-1 py-2.5 rounded-full text-[13px] font-bold transition-colors '+(activeTab==='done' ? 'bg-[#2E7D32] text-white' : 'bg-[#F9F6F0] text-[#8B7355] border border-[#E8E6DC]')}, 'Done Trip ('+doneTrips.length+')')
+    ),
+
+    activeTab==='new' ? 
+    h('div', {className:'p-4 space-y-4'},
+      // FROM / TO GRID
+      h('div', {className:'grid grid-cols-2 gap-3'},
+        // FROM
+        h('div', {className:'bg-white border border-[#F3E8D3] rounded-[16px] p-3 space-y-2'},
+          h('p', {className:'text-[13px] font-extrabold text-[#1B4D3E] flex items-center gap-1'}, '🔵 From'),
+          h('select', {value:fromDiv, onChange:e=>{ setFromDiv(e.target.value); setFromDist(''); setFromUpa(''); }, className:'w-full bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-3 py-2.5 text-[12px] font-bold'}, h('option', {value:''}, 'বিভাগ / Division'), BD_DIVISIONS.map(d=> h('option', {key:d.id, value:d.id}, d.bn+' - '+d.en))),
+          h('select', {value:fromDist, onChange:e=>{ setFromDist(e.target.value); setFromUpa(''); }, disabled:!fromDiv, className:'w-full bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-3 py-2.5 text-[12px] font-bold disabled:opacity-50'}, h('option', {value:''}, 'জেলা / District'), getDistricts(fromDiv).map(d=> h('option', {key:d.id, value:d.id}, d.bn+' - '+d.en))),
+          h('select', {value:fromUpa, onChange:e=>setFromUpa(e.target.value), disabled:!fromDist, className:'w-full bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-3 py-2.5 text-[12px] font-bold disabled:opacity-50'}, h('option', {value:''}, 'উপজেলা / Upazila'), getUpazilas(fromDiv, fromDist).map(u=> h('option', {key:u, value:u}, u))),
+          h('div', {className:'flex items-center gap-2 bg-white border border-[#E8E6DC] rounded-[12px] px-3 py-2'},
+            h('span', {className:'text-[14px]'}, '📅'),
+            h('input', {type:'date', value:fromDate, onChange:e=>setFromDate(e.target.value), className:'flex-1 bg-transparent text-[12px] font-bold outline-none'})
+          )
+        ),
+        // TO
+        h('div', {className:'bg-white border border-[#F3E8D3] rounded-[16px] p-3 space-y-2'},
+          h('p', {className:'text-[13px] font-extrabold text-[#B71C1C] flex items-center gap-1'}, '🔴 Destination'),
+          h('select', {value:toDiv, onChange:e=>{ setToDiv(e.target.value); setToDist(''); setToUpa(''); }, className:'w-full bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-3 py-2.5 text-[12px] font-bold'}, h('option', {value:''}, 'বিভাগ / Division'), BD_DIVISIONS.map(d=> h('option', {key:d.id, value:d.id}, d.bn+' - '+d.en))),
+          h('select', {value:toDist, onChange:e=>{ setToDist(e.target.value); setToUpa(''); }, disabled:!toDiv, className:'w-full bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-3 py-2.5 text-[12px] font-bold disabled:opacity-50'}, h('option', {value:''}, 'জেলা / District'), getDistricts(toDiv).map(d=> h('option', {key:d.id, value:d.id}, d.bn+' - '+d.en))),
+          h('select', {value:toUpa, onChange:e=>setToUpa(e.target.value), disabled:!toDist, className:'w-full bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-3 py-2.5 text-[12px] font-bold disabled:opacity-50'}, h('option', {value:''}, 'উপজেলা / Upazila'), getUpazilas(toDiv, toDist).map(u=> h('option', {key:u, value:u}, u))),
+          h('div', {className:'flex items-center gap-2 bg-white border border-[#E8E6DC] rounded-[12px] px-3 py-2'},
+            h('span', {className:'text-[14px]'}, '📅'),
+            h('input', {type:'date', value:toDate, onChange:e=>setToDate(e.target.value), className:'flex-1 bg-transparent text-[12px] font-bold outline-none'})
+          )
+        )
+      ),
+
+      // PREVIEW LINE
+      (fromDiv || toDiv) ? h('div', {className:'bg-[#2E7D32] text-white rounded-[12px] p-3 text-center'},
+        h('p', {className:'text-[16px] font-extrabold'}, (buildLocationString(fromDiv, fromDist, fromUpa) || '?')+' → '+(buildLocationString(toDiv, toDist, toUpa) || '?')),
+        h('p', {className:'text-[11px] mt-1 opacity-90'}, formatDMY(fromDate)+' → '+formatDMY(toDate))
+      ) : null,
+
+      // ITEMS LIST
+      h('div', {className:'bg-white border border-[#F3E8D3] rounded-[16px] p-3'},
+        h('div', {className:'flex justify-between items-center mb-3'},
+          h('p', {className:'text-[16px] font-extrabold'}, 'প্রয়োজনীয় জিনিস ('+selected.length+')'),
+          h('input', {value:search, onChange:e=>setSearch(e.target.value), placeholder:'🔍 Search items...', className:'w-[50%] bg-[#F9F6F0] border border-[#E8E6DC] rounded-full px-3 py-1.5 text-[11px] outline-none'})
+        ),
+        h('div', {className:'space-y-2 max-h-[400px] overflow-y-auto'},
+          filteredGroups.map(g=>
+            h('div', {key:g.id, className:'border border-[#F3E8D3] rounded-[12px] overflow-hidden'},
+              h('button', {onClick:()=>setOpenGroups(prev=>({...prev, [g.id]:!prev[g.id]})), className:'w-full flex justify-between items-center p-4 py-4 bg-[#FFFEF7]'},
+                h('span', {className:'text-[21px] font-extrabold leading-tight'}, g.icon+' '+g.name+' ('+g.items.filter(it=>selected.includes(it.id)).length+'/'+g.items.length+')'),
+                h('span', {className:'text-[11px]'}, openGroups[g.id] ? '▲' : '▼')
+              ),
+              openGroups[g.id] ? h('div', {className:'p-3 grid grid-cols-1 gap-3 bg-white'},
+                g.items.map(it=>{
+                  const sel=selected.includes(it.id);
+                  return h('button', {key:it.id, onClick:()=>handleSelect(it.id), className:'flex items-center gap-3 p-4 py-5 rounded-[12px] border-2 text-left transition-colors mb-1 '+(sel ? 'bg-[#E8F5E9] border-[#2E7D32] text-[#1B4D3E]' : 'bg-[#FFEBEE] border-[#FFCDD2] text-[#B71C1C]')},
+                    h('div', {className:'w-[28px] h-[28px] rounded-[6px] flex items-center justify-center shrink-0 '+(sel ? 'bg-[#2E7D32]' : 'bg-[#B71C1C]')}, h('span', {className:'text-white text-[14px] font-bold'}, sel ? '✓' : '✕')),
+                    h('span', {className:'text-[18px]'}, it.icon),
+                    h('span', {className:'text-[17px] font-extrabold flex-1 leading-relaxed py-1'}, it.label)
+                  );
+                }).concat(g.id==='others' ? [h('div', {key:'others-note-box', className:'mt-4 p-4 bg-[#FFF8E1] rounded-[14px] border-2 border-[#FFE082]'},
+                  h('label', {className:'text-[14px] font-extrabold text-[#5D4037] mb-2 block'}, '📝 Write other travel items / notes'),
+                  h('textarea', {value:othersNote||'', onChange:e=>{const v=e.target.value; if(typeof setOthersNote==='function') setOthersNote(v); try{ localStorage.setItem('travel_others_note', v); }catch(er){}}, placeholder:'e.g., Extra charger, gifts, umbrella...', className:'w-full h-[120px] p-4 rounded-[12px] border-2 border-[#E8E6DC] bg-white text-[15px] text-[#1A1A1A] placeholder-[#9A9A9A] focus:border-[#2E7D32] focus:outline-none resize-none', rows:5}),
+                  h('p', {className:'text-[12px] text-[#8D6E63] mt-2'}, 'This note will be saved with your checklist')
+                )] : [])
+              ) : null
+            )
+          )
+        )
+      ),
+
+      // CANCEL SAVE - Fixed bottom, both visible side by side
+      h('div', {className:'flex gap-3 pb-6 pt-3 bg-[#FFFEF7] sticky bottom-0 border-t border-[#F3E8D3]/50 mt-4'},
+        h('button', {onClick:handleCancel, className:'flex-1 py-4 rounded-full bg-white border-2 border-[#E8E6DC] text-[#1A1A1A] text-[17px] font-extrabold shadow-sm'}, 'Cancel'),
+        h('button', {onClick:handleSave, className:'flex-1 py-4 rounded-full bg-[#2E7D32] text-white text-[17px] font-extrabold shadow-lg'}, editingId ? 'Update' : 'Save')
+      )
+    ) : null,
+
+    activeTab==='saved' ?
+    h('div', {className:'p-3 space-y-3'},
+      savedTrips.length===0 ? h('p', {className:'text-center py-10 text-[13px] text-[#8B7355]'}, 'No saved trips. Create New Trip.') :
+      savedTrips.map(tr=>{
+        const total=tr.selected?.length||0;
+        const packed=tr.packed?.length||0;
+        const pct= total>0 ? Math.round(packed/total*100) : 0;
+        return h('div', {key:tr.id, className:'bg-white border border-[#F3E8D3] rounded-[16px] p-3 shadow-sm'},
+          h('div', {className:'flex justify-between items-start'},
+            h('div', {className:'flex-1'},
+              h('p', {className:'text-[18px] font-extrabold text-[#1A1A1A]'}, (tr.fromLocation||'?')+' → '+(tr.destination||'?')),
+              h('p', {className:'text-[12px] font-bold text-[#5C4A32] mt-1'}, formatDMY(tr.fromDate)+' → '+formatDMY(tr.toDate)),
+              h('div', {className:'mt-2'},
+                h('div', {className:'flex justify-between text-[11px] font-bold mb-1'}, h('span', null, 'Packing Progress'), h('span', {className:'text-[#2E7D32]'}, packed+'/'+total+' ('+pct+'%)')),
+                h('div', {className:'w-full h-2 bg-[#F3E8D3] rounded-full overflow-hidden'}, h('div', {className:'h-full bg-[#2E7D32] transition-all', style:{width:pct+'%'}}))
+              ),
+              h('div', {className:'mt-3 bg-[#FFFEF7] border border-[#F3E8D3] rounded-[12px] p-2'},
+                (tr.selected||[]).map(sid=>{
+                  let lbl=sid;
+                  TRAVEL_GROUPS.forEach(g=>{ g.items.forEach(it=>{ if(it.id===sid) lbl=it.label; }); });
+                  const isPacked = tr.packed && tr.packed.includes(sid);
+                  return h('div', {key:sid, className:'flex items-center gap-2 py-2 border-b border-[#F3E8D3]/50 last:border-0 cursor-pointer '+(isPacked ? 'bg-[#E8F5E9]/50' : ''), onClick:()=>togglePacked(tr.id, sid)},
+                    h('div', {className:'w-[20px] h-[20px] rounded-[5px] border-2 flex items-center justify-center shrink-0 '+(isPacked ? 'bg-[#2E7D32] border-[#2E7D32]' : 'bg-[#B71C1C]')}, isPacked ? h('span', {className:'text-white text-[13px] font-bold'}, '✓') : null),
+                    h('span', {className:'text-[12px] font-medium '+(isPacked ? 'text-[#2E7D32] line-through' : 'text-[#1A1A1A]')}, lbl)
+                  );
+                })
+              )
+            ),
+            h('div', {className:'flex flex-col gap-1.5 ml-2 shrink-0'},
+              h('button', {onClick:()=>loadTrip(tr), className:'px-3 py-1.5 rounded-full bg-[#2E7D32] text-white text-[13px] font-bold'}, 'Edit'),
+              h('button', {onClick:()=>markDone(tr.id), className:'px-3 py-1.5 rounded-full bg-[#2E7D32] text-white text-[13px] font-bold'}, 'Done'),
+              h('button', {onClick:()=>deleteTrip(tr.id), className:'px-3 py-1.5 rounded-full bg-white border border-[#FFCDD2] text-[#B71C1C] text-[11px] font-bold'}, 'Del')
+            )
+          )
+        );
+      })
+    ) : null,
+
+    activeTab==='done' ?
+    h('div', {className:'p-3 space-y-3'},
+      doneTrips.length===0 ? h('p', {className:'text-center py-10 text-[13px] text-[#8B7355]'}, 'No done trips yet.') :
+      doneTrips.map(tr=>
+        h('div', {key:tr.id, className:'bg-[#E8F5E9] border border-[#A5D6A7] rounded-[16px] p-3'},
+          h('p', {className:'text-[16px] font-extrabold'}, (tr.fromLocation||'?')+' → '+(tr.destination||'?')),
+          h('p', {className:'text-[11px] text-[#5C4A32] mt-1'}, formatDMY(tr.fromDate)+' → '+formatDMY(tr.toDate)+' | '+ (tr.selected?.length||0)+' items'),
+          h('div', {className:'flex gap-2 mt-2'},
+            h('button', {onClick:()=>loadTrip(tr), className:'px-3 py-1.5 rounded-full bg-white border text-[11px] font-bold'}, 'Load Again'),
+            h('button', {onClick:()=>markUndone(tr.id), className:'px-3 py-1.5 rounded-full bg-[#FFEBEE] border border-[#FFCDD2] text-[#B71C1C] text-[11px] font-bold'}, 'Undo'),
+            h('button', {onClick:()=>deleteTrip(tr.id), className:'px-3 py-1.5 rounded-full bg-white border text-[11px]'}, 'Del')
+          )
+        )
+      )
+    ) : null
+  );
+}
+
+
 function BazarManager({ bazarList, setBazarList, transactions, setTransactions, setToast, setBazarDeletedIds, googleUser, syncToCloud }){
   const [bName, setBName] = useState('');
   const [bAmount, setBAmount] = useState('');
@@ -4951,15 +4844,15 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
     h('div', {className:'grid grid-cols-3 gap-2 bg-[#FFFBF7] border border-[#F3E8D3] rounded-[16px] p-3'},
       h('div', {className:'text-center'},
         h('p', {className:'text-[11px] text-[#8B7355] font-medium'}, 'মোট'),
-        h('p', {className:'text-[14px] font-bold text-[#2D2A26]'}, '৳' + total)
+        h('p', {className:'text-[16px] font-bold text-[#2D2A26]'}, '৳' + total)
       ),
       h('div', {className:'text-center border-l border-[#F3E8D3]'},
         h('p', {className:'text-[11px] text-[#8B7355] font-medium'}, 'কেনা'),
-        h('p', {className:'text-[14px] font-bold text-[#2E7D32]'}, '৳' + boughtTotal)
+        h('p', {className:'text-[16px] font-bold text-[#2E7D32]'}, '৳' + boughtTotal)
       ),
       h('div', {className:'text-center border-l border-[#F3E8D3]'},
         h('p', {className:'text-[11px] text-[#8B7355] font-medium'}, 'বাকি'),
-        h('p', {className:'text-[14px] font-bold text-[#B71C1C]'}, '৳' + baki)
+        h('p', {className:'text-[16px] font-bold text-[#B71C1C]'}, '৳' + baki)
       )
     ),
     h('div', {className:'bg-[#FFF8E1] border border-[#FFE082] rounded-[16px] p-3 space-y-2'},
@@ -5555,6 +5448,7 @@ function App(){
   const [confirmDelTx, setConfirmDelTx] = useState(null);
   const [editingBankLoan, setEditingBankLoan] = useState(null);
   const [confirmDelBank, setConfirmDelBank] = useState(null);
+  const [confirmDelBankFinal, setConfirmDelBankFinal] = useState(null);
   const [editingHistoryLoan, setEditingHistoryLoan] = useState(null);
   const [editingHistoryPayment, setEditingHistoryPayment] = useState(null);
   const [checklistLoanId, setChecklistLoanId] = useState(null);
@@ -6006,7 +5900,7 @@ setTimeout(()=>{
         h('div', {className:'grid grid-cols-3 gap-3'},
           h('div', {onClick:()=>goHistoryFiltered('income'), className:'bg-[#E8F5E9] rounded-[20px] p-3.5 border border-[#C8E6C9] cursor-pointer active:scale-[0.98] transition-transform'},
             h('p', {className:'text-[11px] font-semibold text-[#2E7D32]'}, t.monthlyIncome),
-            h('p', {className:'text-[14px] font-bold mt-1 text-[#1B5E20]'}, fmtMoney(monthIncome))
+            h('p', {className:'text-[16px] font-bold mt-1 text-[#1B5E20]'}, fmtMoney(monthIncome))
           ),
           h('div', {onClick:()=>{ setHistoryFilter('expense'); setHistoryFrom(today()); setHistoryTo(today()); customSetPage('history'); }, className:'bg-[#FFEBEE] rounded-[20px] p-3.5 border border-[#FFCDD2] cursor-pointer active:scale-[0.98] transition-transform'},
             h('p', {className:'text-[11px] font-semibold text-[#C62828]'}, t.todayExpense),
@@ -6014,7 +5908,7 @@ setTimeout(()=>{
           ),
           h('div', {onClick:()=>goHistoryFiltered('expense'), className:'bg-[#FFEBEE] rounded-[20px] p-3.5 border border-[#FFCDD2] cursor-pointer active:scale-[0.98] transition-transform'},
             h('p', {className:'text-[11px] font-semibold text-[#C62828]'}, t.monthlyExpense),
-            h('p', {className:'text-[14px] font-bold mt-1 text-[#B71C1C]'}, fmtMoney(monthExpense))
+            h('p', {className:'text-[16px] font-bold mt-1 text-[#B71C1C]'}, fmtMoney(monthExpense))
           )
         )
       ),
@@ -6042,18 +5936,18 @@ setTimeout(()=>{
         h('div', {className:'grid grid-cols-3 gap-3'},
           h('div', {onClick:()=>setAddType('bazar'), className:'bg-[#F9F5EB] rounded-[20px] p-3.5 border border-[#F3E8D3] cursor-pointer active:scale-[0.98] transition-transform'},
             h('p', {className:'text-[11px] font-semibold text-[#8B7355]'}, lang==='en' ? 'Bazar List' : 'বাজার লিস্ট'),
-            h('p', {className:'text-[14px] font-bold mt-1'}, (bazarList.length + (lang==='en' ? ' items' : ' টি'))),
-            h('p', {className:'text-[14px] font-bold text-[#2D2A26] mt-1'}, '৳' + bazarList.reduce((a,b)=>a+(parseFloat(b.amount)||0),0))
+            h('p', {className:'text-[16px] font-bold mt-1'}, (bazarList.length + (lang==='en' ? ' items' : ' টি'))),
+            h('p', {className:'text-[16px] font-bold text-[#2D2A26] mt-1'}, '৳' + bazarList.reduce((a,b)=>a+(parseFloat(b.amount)||0),0))
           ),
           h('div', {onClick:()=>setAddType('bazar'), className:'bg-[#E8F5E9] rounded-[20px] p-3.5 border border-[#C8E6C9] cursor-pointer active:scale-[0.98] transition-transform'},
             h('p', {className:'text-[11px] font-semibold text-[#2E7D32]'}, lang==='en' ? 'Bought' : 'কেনা হয়েছে'),
-            h('p', {className:'text-[14px] font-bold mt-1 text-[#1B5E20]'}, (bazarList.filter(x=>x.bought).length + (lang==='en' ? ' items' : ' টি'))),
-            h('p', {className:'text-[14px] font-bold text-[#1B5E20] mt-1'}, '৳' + bazarList.filter(x=>x.bought).reduce((a,b)=>a+(parseFloat(b.amount)||0),0))
+            h('p', {className:'text-[16px] font-bold mt-1 text-[#1B5E20]'}, (bazarList.filter(x=>x.bought).length + (lang==='en' ? ' items' : ' টি'))),
+            h('p', {className:'text-[16px] font-bold text-[#1B5E20] mt-1'}, '৳' + bazarList.filter(x=>x.bought).reduce((a,b)=>a+(parseFloat(b.amount)||0),0))
           ),
           h('div', {onClick:()=>setAddType('bazar'), className:'bg-[#FFEBEE] rounded-[20px] p-3.5 border border-[#FFCDD2] cursor-pointer active:scale-[0.98] transition-transform'},
             h('p', {className:'text-[11px] font-semibold text-[#C62828]'}, lang==='en' ? 'Not Bought' : 'কেনা হয় নি'),
-            h('p', {className:'text-[14px] font-bold mt-1 text-[#B71C1C]'}, (bazarList.filter(x=>!x.bought).length + (lang==='en' ? ' items' : ' টি'))),
-            h('p', {className:'text-[14px] font-bold text-[#B71C1C] mt-1'}, '৳' + bazarList.filter(x=>!x.bought).reduce((a,b)=>a+(parseFloat(b.amount)||0),0))
+            h('p', {className:'text-[16px] font-bold mt-1 text-[#B71C1C]'}, (bazarList.filter(x=>!x.bought).length + (lang==='en' ? ' items' : ' টি'))),
+            h('p', {className:'text-[16px] font-bold text-[#B71C1C] mt-1'}, '৳' + bazarList.filter(x=>!x.bought).reduce((a,b)=>a+(parseFloat(b.amount)||0),0))
           )
         )
       ),
@@ -6085,7 +5979,7 @@ setTimeout(()=>{
             h(Field, {label:t.dateTo}, h(TextInput, {type:'date', value:historyTo, onChange:e=>setHistoryTo(e.target.value)}))
           ),
           h('div', {className:'grid grid-cols-3 gap-2'},
-            h('button', {onClick:()=>handleHistoryPdf('download'), className:'py-2.5 rounded-[12px] bg-[#2D2A26] text-white text-[11px] font-bold'}, '📄 Download PDF'),
+            h('button', {onClick:()=>handleHistoryPdf('download'), className:'py-2.5 rounded-[12px] bg-[#2D2A26] text-white text-[13px] font-bold'}, '📄 Download PDF'),
             h('button', {onClick:()=>handleHistoryPdf('view'), className:'py-2.5 rounded-[12px] bg-white border border-[#F3E8D3] text-[#2D2A26] text-[11px] font-bold'}, '👁️ View'),
             h('button', {onClick:()=>handleHistoryPdf('share'), className:'py-2.5 rounded-[12px] bg-[#C9A86A] text-[#2D2A26] text-[11px] font-bold'}, '📤 Share')
           ),
@@ -6338,7 +6232,7 @@ setTimeout(()=>{
         h('div', {className:'mt-3 grid grid-cols-3 gap-2'},
           h('button', {onClick:function(){ handleCategoryPdf('download'); }, className:'py-2.5 rounded-full bg-white text-[#2D2A26] text-[11px] font-bold'}, '📄 PDF'),
           h('button', {onClick:function(){ handleCategoryPdf('view'); }, className:'py-2.5 rounded-full bg-[#C9A86A] text-[#2D2A26] text-[11px] font-bold'}, '👁️ View'),
-          h('button', {onClick:function(){ handleCategoryPdf('share'); }, className:'py-2.5 rounded-full bg-[#2D2A26] border border-white/20 text-white text-[11px] font-bold'}, '📤 Share')
+          h('button', {onClick:function(){ handleCategoryPdf('share'); }, className:'py-2.5 rounded-full bg-[#2D2A26] border border-white/20 text-white text-[13px] font-bold'}, '📤 Share')
         )
       ),
       h('div', {className:'bg-white rounded-[16px] p-2.5 border border-[#F3E8D3] grid grid-cols-1 gap-2.5'},
@@ -6406,7 +6300,7 @@ setTimeout(()=>{
         h('div', {className:'mt-3 grid grid-cols-3 gap-2'},
           h('button', {onClick:function(){ handleBankDetailPdf('download'); }, className:'py-2.5 rounded-full bg-white text-[#2D2A26] text-[11px] font-bold'}, '📄 PDF'),
           h('button', {onClick:function(){ handleBankDetailPdf('view'); }, className:'py-2.5 rounded-full bg-[#C9A86A] text-[#2D2A26] text-[11px] font-bold'}, '👁️ View'),
-          h('button', {onClick:function(){ handleBankDetailPdf('share'); }, className:'py-2.5 rounded-full bg-[#2D2A26] border border-white/20 text-white text-[11px] font-bold'}, '📤 Share')
+          h('button', {onClick:function(){ handleBankDetailPdf('share'); }, className:'py-2.5 rounded-full bg-[#2D2A26] border border-white/20 text-white text-[13px] font-bold'}, '📤 Share')
         )
       ),
       bankSpecificLoans.length===0 ? h('div', {className:'bg-white rounded-[20px] p-8 border border-[#F3E8D3] text-center'}, h('p', {className:'text-[13px] text-[#8B7355]'}, t.noData)) :
@@ -6653,7 +6547,7 @@ setTimeout(()=>{
         h('div', {className:'w-full mt-4 space-y-3'},
           h('div', null,
             h('label', {className:'text-[11px] font-bold text-[#8B7355]'}, lang==='en'?'Full Name':'পূর্ণ নাম'),
-            h(TextInput, {value:userName, onChange:e=>setUserName(e.target.value), placeholder:'Md. Abdus Salam', className:'w-full mt-1.5 bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] font-bold outline-none placeholder:text-[#8B7355]/40 placeholder:font-normal'})
+            h(TextInput, {value:userName, onChange:e=>setUserName(e.target.value), placeholder:'Md. Abdus Salam', className:'w-full mt-1.5 bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[16px] font-bold outline-none placeholder:text-[#8B7355]/40 placeholder:font-normal'})
           ),
           h('div', null,
             h('label', {className:'text-[11px] font-bold text-[#8B7355]'}, lang==='en'?'Designation / Title':'পদবী'),
@@ -6858,10 +6752,26 @@ setTimeout(()=>{
         }
       }),
       h(ConfirmModal, {
-        open: !!confirmDelBank, title: t.confirmDeleteTitle, message: t.confirmDeleteMsg,
-        cancelLabel: t.cancel, confirmLabel: t.yesDelete,
-        onCancel: ()=>setConfirmDelBank(null), onConfirm: ()=>deleteBankLoan(confirmDelBank)
-      }),
+      open: !!confirmDelBank, title: t.confirmDeleteTitle,
+      message: t.confirmDeleteMsg,
+      cancelLabel: t.cancel, confirmLabel: t.yesDelete,
+      onCancel: ()=>setConfirmDelBank(null), onConfirm: ()=>{ setConfirmDelBankFinal(confirmDelBank); setConfirmDelBank(null); }
+    }),
+    h(ConfirmModal, {
+      open: !!confirmDelBankFinal, title: lang==='en' ? 'Are you 100% sure? - Bank Loan' : 'আপনি কি ১০০% নিশ্চিত? - ব্যাংক লোন',
+      message: lang==='en' ? 'Bank loan data will be permanently deleted. Final confirmation required.' : 'ব্যাংক লোনের তথ্য স্থায়ীভাবে মুছে যাবে। চূড়ান্ত নিশ্চিতকরণ প্রয়োজন।',
+      cancelLabel: t.cancel, confirmLabel: lang==='en' ? 'Yes, Delete Bank Loan' : 'হ্যাঁ, ব্যাংক লোন মুছুন',
+      onCancel: ()=>setConfirmDelBankFinal(null), onConfirm: ()=>{ 
+        if(confirmDelBankFinal){
+          try{
+            const id = confirmDelBankFinal.id || confirmDelBankFinal;
+            if(typeof deleteBankLoan==='function') deleteBankLoan(id);
+          }catch(e){ console.error(e); }
+        }
+        setConfirmDelBankFinal(null); 
+        setConfirmDelBank(null);
+      }
+    }),
       h(ConfirmModal, {
         open: confirmClearOpen, title: t.clearData, message: t.confirmDeleteMsg,
         cancelLabel: t.cancel, confirmLabel: t.yesDelete,
