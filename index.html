@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Lifestyle V18.6 Travel Partner Multi-Select Fixed</title>
+<title>Lifestyle V18.9 Travel - Date Bigger DMY + Tick Mark</title>
 <link rel="manifest" href="manifest.json">
 
 <!-- Single File PWA - Lifestyle Logo Embedded -->
@@ -349,6 +349,9 @@ const h = React.createElement;
 
 /* ---------- helpers ---------- */
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+
+function formatDMY(d){ try{ if(!d) return ''; const parts=d.split('-'); if(parts.length!==3) return d; return parts[2]+'/'+parts[1]+'/'+parts[0]; }catch(e){ return d; } }
+
 function today(){ 
   const d = new Date();
   const yyyy = d.getFullYear();
@@ -3351,8 +3354,8 @@ function TravelManager({t, lang, setToast}){
   // NEW: Travel Partner trip details
   const [fromLocation, setFromLocation] = React.useState(()=>{ try{ return localStorage.getItem('travel_from_loc')||''; }catch(e){ return ''; } });
   const [destination, setDestination] = React.useState(()=>{ try{ return localStorage.getItem('travel_dest')||''; }catch(e){ return ''; } });
-  const [fromDate, setFromDate] = React.useState(()=>{ try{ return localStorage.getItem('travel_from_date')||''; }catch(e){ return ''; } });
-  const [toDate, setToDate] = React.useState(()=>{ try{ return localStorage.getItem('travel_to_date')||''; }catch(e){ return ''; } });
+  const [fromDate, setFromDate] = React.useState(()=>{ try{ const v=localStorage.getItem('travel_from_date'); if(v) return v; const t=today(); try{ localStorage.setItem('travel_from_date', t); }catch(e){} return t; }catch(e){ return today(); } });
+  const [toDate, setToDate] = React.useState(()=>{ try{ const v=localStorage.getItem('travel_to_date'); if(v) return v; const t=today(); try{ localStorage.setItem('travel_to_date', t); }catch(e){} return t; }catch(e){ return today(); } });
   const [travelStatus, setTravelStatus] = React.useState('Not Yet');
   const [travelList, setTravelList] = React.useState(()=>{ try{ const l=JSON.parse(localStorage.getItem('travel_partner_list')||'[]'); return Array.isArray(l)?l:[]; }catch(e){ return []; } });
   const [showTravelList, setShowTravelList] = React.useState(false);
@@ -3575,8 +3578,8 @@ function TravelManager({t, lang, setToast}){
   function handleNewTrip(){
     setFromLocation('');
     setDestination('');
-    setFromDate('');
-    setToDate('');
+    setFromDate(today());
+    setToDate(today());
     setTravelStatus('Not Yet');
     setSelected([]);
     setOthersNote('');
@@ -3614,6 +3617,25 @@ function TravelManager({t, lang, setToast}){
         setToast && setToast('Deleted');
       }catch(e){}
     }
+  }
+
+  
+  function togglePacked(tripId, itemId){
+    try{
+      const updated = travelList.map(tr=>{
+        if(tr.id!==tripId) return tr;
+        let packed = tr.packed || [];
+        if(packed.includes(itemId)){
+          packed = packed.filter(id=>id!==itemId);
+        } else {
+          packed = [...packed, itemId];
+        }
+        return {...tr, packed};
+      });
+      setTravelList(updated);
+      saveLS('lifestyle_travel_list', updated);
+      try{ const u=window._lastGoogleUser; if(u) syncToCloud && syncToCloud('lifestyle_travel_list', updated, u.uid||u.email); }catch(e){}
+    }catch(e){ console.error(e); }
   }
 
   function toggleTravelStatus(id, status){
@@ -3682,9 +3704,9 @@ function TravelManager({t, lang, setToast}){
             h('div', {key:tr.id, className:'bg-[#FFFEF7] border rounded-[12px] p-3 space-y-2 '+(tr.travelStatus==='Travel Done' ? 'border-[#4CAF50] bg-[#E8F5E9]' : 'border-[#EF9A9A] bg-[#FFEBEE]')},
               h('div', {className:'flex items-center justify-between'},
                 h('div', {className:'flex-1'},
-                  h('p', {className:'text-[12px] font-bold text-[#1A1A1A]'}, (tr.fromLocation||'?')+' → '+(tr.destination||'?')),
-                  h('p', {className:'text-[10px] text-gray-600'}, (tr.fromDate||'')+' → '+(tr.toDate||'')+' | '+(tr.selected?.length||0)+' items'),
-                  tr.selected && tr.selected.length>0 ? h('p', {className:'text-[12px] font-bold text-[#1A1A1A] mt-2'}, tr.selected.map(sid=>{ try{ let lbl=sid; TRAVEL_GROUPS.forEach(g=>{ g.items.forEach(it=>{ if(it.id===sid) lbl=it.label; }); }); return lbl; }catch(e){ return sid; } }).join(', ')) : null,
+                  h('p', {className:'text-[18px] font-extrabold text-[#1A1A1A] leading-tight tracking-tight'}, (tr.fromLocation||'?')+' → '+(tr.destination||'?')),
+                  h('p', {className:'text-[13px] font-bold text-[#333] mt-1'}, formatDMY(tr.fromDate)+' → '+formatDMY(tr.toDate)+' | '+(tr.selected?.length||0)+' items'),
+                  tr.selected && tr.selected.length>0 ? h('div', {className:'mt-2 bg-white rounded-[10px] p-2 border border-[#E8E6DC]'}, tr.selected.map((sid, idx)=>{ try{ let lbl=sid; TRAVEL_GROUPS.forEach(g=>{ g.items.forEach(it=>{ if(it.id===sid) lbl=it.label; }); }); const isPacked = tr.packed && tr.packed.includes(sid); return h('div', {key:sid, className:'flex items-start gap-2 py-1.5 border-b border-[#F3E8D3]/50 last:border-0 cursor-pointer '+(isPacked ? 'bg-green-50' : ''), onClick:()=>togglePacked(tr.id, sid)}, h('div', {className:'w-[18px] h-[18px] rounded-[4px] border-2 flex items-center justify-center shrink-0 mt-[1px] '+(isPacked ? 'bg-[#2E7D32] border-[#2E7D32]' : 'border-[#B0B0B0] bg-white')}, isPacked ? h('span', {className:'text-white text-[11px] font-bold'}, '✓') : null), h('span', {className:'text-[11px] font-bold '+(isPacked ? 'text-[#2E7D32] line-through' : 'text-[#E65100]')+' min-w-[18px]'}, (idx+1)+'.'), h('span', {className:'text-[12px] font-medium leading-snug '+(isPacked ? 'text-[#2E7D32] line-through' : 'text-[#1A1A1A]')}, lbl)); }catch(e){ return h('div', {key:sid, className:'text-[12px]'}, sid); } })) : null,
                   h('p', {className:'text-[10px] font-bold '+(tr.travelStatus==='Travel Done' ? 'text-[#2E7D32]' : 'text-[#B71C1C]')}, tr.travelStatus)
                 ),
                 h('div', {className:'flex gap-1'},
