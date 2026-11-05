@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Lifestyle V18.8 Travel Partner - Bigger Title List Today Default</title>
+<title>Lifestyle V21.0 Travel Tabs Color Fixed + Stay In Modal</title>
 <link rel="manifest" href="manifest.json">
 
 <!-- Single File PWA - Lifestyle Logo Embedded -->
@@ -1206,7 +1206,6 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
   const [editingLoan, setEditingLoan] = useState(null);
   const [editingPayment, setEditingPayment] = useState(null);
   const [confirmDel, setConfirmDel] = useState(null); // {kind:'loan'|'payment'|'person', id}
-  const [confirmDelFinal, setConfirmDelFinal] = useState(null); // second step double confirmation for loans
 
   const totalLoaned = person.loans.reduce((a,l)=>a+l.amount,0);
   const totalPaid = person.payments.reduce((a,p)=>a+p.amount,0);
@@ -1226,24 +1225,16 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
     onUpdatePerson(Object.assign({}, person, {payments}));
     setAddingPayment(false); setEditingPayment(null);
   }
-  function doDeleteFirst(){
+  function doDelete(){
     if(!confirmDel) return;
-    // First Yes -> move to second confirmation (Double Confirmation for Loan/Return/Repayment/Bank)
-    setConfirmDelFinal(confirmDel);
-    setConfirmDel(null);
-  }
-  function doDeleteFinal(){
-    const target = confirmDelFinal || confirmDel;
-    if(!target) return;
-    if(target.kind === 'loan'){
-      onUpdatePerson(Object.assign({}, person, {loans: person.loans.filter(l=>l.id!==target.id)}));
-    } else if(target.kind === 'payment'){
-      onUpdatePerson(Object.assign({}, person, {payments: person.payments.filter(p=>p.id!==target.id)}));
-    } else if(target.kind === 'person'){
+    if(confirmDel.kind === 'loan'){
+      onUpdatePerson(Object.assign({}, person, {loans: person.loans.filter(l=>l.id!==confirmDel.id)}));
+    } else if(confirmDel.kind === 'payment'){
+      onUpdatePerson(Object.assign({}, person, {payments: person.payments.filter(p=>p.id!==confirmDel.id)}));
+    } else if(confirmDel.kind === 'person'){
       onDeletePerson(person.id);
     }
     setConfirmDel(null);
-    setConfirmDelFinal(null);
   }
 
   const balanceLabel = kind === 'given' ? t.youWillGet : t.youOwe;
@@ -1380,13 +1371,7 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
       open: !!confirmDel, title: t.confirmDeleteTitle,
       message: confirmDel && confirmDel.kind === 'person' ? t.deletePersonMsg : t.confirmDeleteMsg,
       cancelLabel: t.cancel, confirmLabel: t.yesDelete,
-      onCancel: ()=>setConfirmDel(null), onConfirm: doDeleteFirst
-    }),
-    h(ConfirmModal, {
-      open: !!confirmDelFinal, title: lang==='en' ? 'Are you 100% sure?' : 'আপনি কি ১০০% নিশ্চিত?',
-      message: lang==='en' ? 'This is final confirmation. This data will be permanently deleted and cannot be recovered. Do you want to proceed?' : 'এটি চূড়ান্ত নিশ্চিতকরণ। এই তথ্য স্থায়ীভাবে মুছে যাবে এবং আর ফেরত পাওয়া যাবে না। আপনি কি এগিয়ে যেতে চান?',
-      cancelLabel: t.cancel, confirmLabel: lang==='en' ? 'Yes, I am 100% sure - Delete' : 'হ্যাঁ, আমি ১০০% নিশ্চিত - মুছুন',
-      onCancel: ()=>{ setConfirmDelFinal(null); }, onConfirm: doDeleteFinal
+      onCancel: ()=>setConfirmDel(null), onConfirm: doDelete
     })
   );
 }
@@ -3877,14 +3862,33 @@ function MarketSurveyManager({t, lang, setToast}){
       h('div', {className:sectionClass}, h('span', null, '3. Existing Loan'), h('button', {onClick:()=>handleSaveSection('Existing Loan'), style:{color:'#2D2A26', backgroundColor:'#C9A86A'}, className:'px-4 py-1 rounded-full text-[11px] font-bold'}, 'Save')),
       h('div', {className:'bg-white border rounded-[12px] p-3 space-y-3'},
         h('div', {className:'flex gap-2 flex-wrap'}, 
-          [['NGO','NGO'],['Bank','Bank'],['NBFI','NBFI'],['Others NGO','Others NGO']].map(t=> h('button', {key:t[0], onClick:()=>{ update('existingLoanType', t[0]); if(t[0]==='Others NGO'){ setShowOthersNGO(v=>!v); } setShowLoanList(true); setShowBusinessList(true); }, style: form.existingLoanType===t[0] ? {backgroundColor:'#1A1A1A', color:'white'} : {backgroundColor:'#F5F1E8', color:'#1A1A1A'}, className:'px-4 py-2 rounded-full text-[11px] font-bold border'}, t[1]))
+          [['NGO','NGO'],['Bank','Bank'],['NBFI','NBFI'],['Others NGO','Others NGO']].map(t=> h('button', {key:t[0], onClick:()=>{ 
+            // Toggle logic: if same button clicked again, hide
+            if(form.existingLoanType===t[0]){
+              if(t[0]==='Others NGO'){
+                setShowOthersNGO(v=>!v);
+              } else {
+                setShowLoanList(v=>!v);
+              }
+              return;
+            }
+            update('existingLoanType', t[0]); 
+            if(t[0]==='Others NGO'){ 
+              setShowOthersNGO(true); 
+              setShowLoanList(false);
+            } else {
+              setShowOthersNGO(false);
+              setShowLoanList(true);
+            }
+            setShowBusinessList(false);
+          }, style: form.existingLoanType===t[0] ? {backgroundColor:'#1A1A1A', color:'white'} : {backgroundColor:'#F5F1E8', color:'#1A1A1A'}, className:'px-4 py-2 rounded-full text-[11px] font-bold border'}, t[1]))
         ),
         showOthersNGO ? h('div', {id:'othersNGOBox', className:'mb-3 p-3 bg-amber-50 border-2 border-amber-200 rounded-xl'},
           h('label', {className:'font-semibold text-sm text-amber-800'}, 'Others NGO Name / অন্যান্য NGO নাম'),
           h('input', {id:'othersNGOInput', value:form.othersNGO, onChange:e=>update('othersNGO', e.target.value), placeholder:'Others NGO নাম লিখুন', className:'w-full mt-2 border-2 border-amber-100 rounded-xl p-3 '+inputClass})
         ) : null,
         h('div', {className:'relative'},
-          h('input', {id:'loanSearch', value:form.existingLoanSearch, onClick:()=>toggleAllSearchBoxes(), onFocus:()=>{ setShowLoanList(true); setShowBusinessList(true); }, onChange:e=>{ update('existingLoanSearch', e.target.value); setShowLoanList(true); setShowBusinessList(true); }, placeholder:'Search NGO/Bank/NBFI - বাংলা / English', className:'w-full border-2 border-emerald-100 rounded-xl p-3 mb-3 '+inputClass}),
+          form.existingLoanType!=='Others NGO' ? h('input', {id:'loanSearch', value:form.existingLoanSearch, onClick:()=>{ if(form.existingLoanType!=='Others NGO') setShowLoanList(v=>!v); }, onFocus:()=>{ if(form.existingLoanType!=='Others NGO') setShowLoanList(true); }, onChange:e=>{ update('existingLoanSearch', e.target.value); setShowLoanList(true); }, placeholder:'Search NGO/Bank/NBFI - বাংলা / English', className:'w-full border-2 border-emerald-100 rounded-xl p-3 mb-3 '+inputClass}) : null,
           showLoanList ? h('div', {id:'loanTabs', className:'space-y-3'},
             // NGO Tab Content
             form.existingLoanType==='NGO' ? h('div', {className:'loanContent grid gap-2 max-h-[250px] overflow-auto border rounded-xl p-2 bg-white'},
@@ -4305,12 +4309,12 @@ function TravelManager({t, lang, setToast}){
   const savedTrips = travelList.filter(tr=> tr.travelStatus!=='Travel Done');
   const doneTrips = travelList.filter(tr=> tr.travelStatus==='Travel Done');
 
-  return h('div', {className:'bg-[#FFFEF7] -m-4 p-0 min-h-[600px]'},
+  return h('div', {className:'bg-[#FFFEF7] -m-4 p-0 min-h-[600px]', onClick:(e)=>e.stopPropagation()},
     // TAB HEADER
     h('div', {className:'flex gap-2 p-3 bg-white border-b border-[#F3E8D3] sticky top-0 z-10'},
-      h('button', {onClick:()=>setActiveTab('new'), className:'flex-1 py-2.5 rounded-full text-[13px] font-bold transition-colors '+(activeTab==='new' ? 'bg-[#2E7D32] text-white' : 'bg-[#F9F6F0] text-[#8B7355] border border-[#E8E6DC]')}, 'New Trip'),
-      h('button', {onClick:()=>setActiveTab('saved'), className:'flex-1 py-2.5 rounded-full text-[13px] font-bold transition-colors relative '+(activeTab==='saved' ? 'bg-[#E65100] text-white' : 'bg-[#F9F6F0] text-[#8B7355] border border-[#E8E6DC]')}, 'Save Trip ('+savedTrips.length+')'),
-      h('button', {onClick:()=>setActiveTab('done'), className:'flex-1 py-2.5 rounded-full text-[13px] font-bold transition-colors '+(activeTab==='done' ? 'bg-[#2E7D32] text-white' : 'bg-[#F9F6F0] text-[#8B7355] border border-[#E8E6DC]')}, 'Done Trip ('+doneTrips.length+')')
+      h('button', {type:'button', onClick:(e)=>{ e.stopPropagation(); setActiveTab('new'); }, className:'flex-1 py-3 rounded-full text-[13px] font-extrabold transition-colors border-2 '+(activeTab==='new' ? 'bg-[#2E7D32] text-white border-[#2E7D32] shadow-md' : 'bg-white text-[#5D4037] border-[#E8E6DC]')}, 'New Trip'),
+      h('button', {type:'button', onClick:(e)=>{ e.stopPropagation(); setActiveTab('saved'); }, className:'flex-1 py-3 rounded-full text-[13px] font-extrabold transition-colors border-2 relative '+(activeTab==='saved' ? 'bg-[#2E7D32] text-white border-[#2E7D32] shadow-md' : 'bg-[#FFF8E1] text-[#5D4037] border-[#FFE082]')}, 'Save Trip ('+savedTrips.length+')'),
+      h('button', {type:'button', onClick:(e)=>{ e.stopPropagation(); setActiveTab('done'); }, className:'flex-1 py-3 rounded-full text-[13px] font-extrabold transition-colors border-2 '+(activeTab==='done' ? 'bg-[#2E7D32] text-white border-[#2E7D32] shadow-md' : 'bg-white text-[#5D4037] border-[#E8E6DC]')}, 'Done Trip ('+doneTrips.length+')')
     ),
 
     activeTab==='new' ? 
@@ -5448,7 +5452,6 @@ function App(){
   const [confirmDelTx, setConfirmDelTx] = useState(null);
   const [editingBankLoan, setEditingBankLoan] = useState(null);
   const [confirmDelBank, setConfirmDelBank] = useState(null);
-  const [confirmDelBankFinal, setConfirmDelBankFinal] = useState(null);
   const [editingHistoryLoan, setEditingHistoryLoan] = useState(null);
   const [editingHistoryPayment, setEditingHistoryPayment] = useState(null);
   const [checklistLoanId, setChecklistLoanId] = useState(null);
@@ -6752,26 +6755,10 @@ setTimeout(()=>{
         }
       }),
       h(ConfirmModal, {
-      open: !!confirmDelBank, title: t.confirmDeleteTitle,
-      message: t.confirmDeleteMsg,
-      cancelLabel: t.cancel, confirmLabel: t.yesDelete,
-      onCancel: ()=>setConfirmDelBank(null), onConfirm: ()=>{ setConfirmDelBankFinal(confirmDelBank); setConfirmDelBank(null); }
-    }),
-    h(ConfirmModal, {
-      open: !!confirmDelBankFinal, title: lang==='en' ? 'Are you 100% sure? - Bank Loan' : 'আপনি কি ১০০% নিশ্চিত? - ব্যাংক লোন',
-      message: lang==='en' ? 'Bank loan data will be permanently deleted. Final confirmation required.' : 'ব্যাংক লোনের তথ্য স্থায়ীভাবে মুছে যাবে। চূড়ান্ত নিশ্চিতকরণ প্রয়োজন।',
-      cancelLabel: t.cancel, confirmLabel: lang==='en' ? 'Yes, Delete Bank Loan' : 'হ্যাঁ, ব্যাংক লোন মুছুন',
-      onCancel: ()=>setConfirmDelBankFinal(null), onConfirm: ()=>{ 
-        if(confirmDelBankFinal){
-          try{
-            const id = confirmDelBankFinal.id || confirmDelBankFinal;
-            if(typeof deleteBankLoan==='function') deleteBankLoan(id);
-          }catch(e){ console.error(e); }
-        }
-        setConfirmDelBankFinal(null); 
-        setConfirmDelBank(null);
-      }
-    }),
+        open: !!confirmDelBank, title: t.confirmDeleteTitle, message: t.confirmDeleteMsg,
+        cancelLabel: t.cancel, confirmLabel: t.yesDelete,
+        onCancel: ()=>setConfirmDelBank(null), onConfirm: ()=>deleteBankLoan(confirmDelBank)
+      }),
       h(ConfirmModal, {
         open: confirmClearOpen, title: t.clearData, message: t.confirmDeleteMsg,
         cancelLabel: t.cancel, confirmLabel: t.yesDelete,
