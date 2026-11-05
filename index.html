@@ -117,8 +117,7 @@ const firebaseConfig = {
 try { 
   firebase.initializeApp(firebaseConfig); 
   try{
-    // DISABLE persistence for instant cross-device sync - GitHub Pages cache was blocking
-    // firebase.firestore().enablePersistence({synchronizeTabs:true}) // REMOVED FOR INSTANT SYNC
+    firebase.firestore().enablePersistence({synchronizeTabs:true}).then(()=>console.log('Firestore persistence enabled')).catch(e=>console.log('Persistence error', e.code));
     firebase.firestore().settings({cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED}); 
   }catch(e){ console.log('Firestore settings error', e); } 
 } catch(e) {}
@@ -5305,8 +5304,7 @@ function App(){
     try{
       const db = firebase.firestore();
       const now = new Date().toISOString();
-      // Force network for instant
-      try{ db.enableNetwork(); }catch(e){}
+      // No forced network toggle - stable
       const deviceId = localStorage.getItem('lifestyle_device_id') || (localStorage.setItem('lifestyle_device_id', uid()), localStorage.getItem('lifestyle_device_id'));
       // FIX 1MB LIMIT: Trim large arrays for cloud - keep full in localStorage
       // ULTIMATE: Read fresh from localStorage to avoid React stale closure
@@ -5346,8 +5344,8 @@ function App(){
         console.log('SYNC SUCCESS', now);
       }).catch(e=>{ 
         console.log('syncToCloud err',e); 
-        setSyncStatus('Sync FAILED: '+(e.message||e).substring(0,80)); 
-        setToast('Sync Failed: '+(e.message||e).substring(0,120));
+        setSyncStatus('Retrying sync: '+(e.message||e).substring(0,80)); 
+        setToast('Retrying: '+(e.message||e).substring(0,120));
         // Try again with even smaller data
         try{
           const tinyData = {transactions: (latestTx||[]).slice(0,100), bazarList: (latestBazar||[]).slice(0,50), updatedAt: now, deviceId: deviceId, userName, userMobile};
@@ -5367,17 +5365,18 @@ function App(){
     try{
       const user = googleUser;
       if(!user || !user.uid){ setToast('প্রথমে Gmail Login করুন'); return; }
-      setSyncStatus('Force Syncing...');
-      setToast('Force Sync শুরু...');
+      setSyncStatus('Syncing...');
+      setToast('Syncing from cloud...');
       const db = firebase.firestore();
-      try{ db.enableNetwork(); }catch(e){}
+      // First push local to cloud
       try{ syncToCloud(user); }catch(e){}
+      // Then force pull
       setTimeout(()=>{ 
         try{ 
           if(unsubscribeRef.current){ try{ unsubscribeRef.current(); }catch(e){} unsubscribeRef.current=null; }
           syncFromCloud(user); 
         }catch(e){}
-      }, 600);
+      }, 800);
       setTimeout(()=>{
         try{
           db.collection('users').doc(user.uid).get({source:'server'}).then(doc=>{
@@ -5433,10 +5432,9 @@ function App(){
       if(unsubscribeRef.current){ try{ unsubscribeRef.current(); }catch(e){} }
       const db = firebase.firestore();
       // FORCE NETWORK - instant
-      try{ db.enableNetwork(); }catch(e){}
-      // FORCE REFRESH - no cache
-      try{ db.disableNetwork().then(()=>db.enableNetwork()); }catch(e){}
-      unsubscribeRef.current = db.collection('users').doc(user.uid).onSnapshot(doc=>{
+      // stable - no network toggle
+      // Stable sync - no forced network toggle
+      unsubscribeRef.current = db.collection('users').doc(user.uid).onSnapshot({includeMetadataChanges: false}, doc=>{
         if(!doc.exists){ cloudLoadedRef.current=true; try{ db.collection('users').doc(user.uid).set({createdAt: new Date().toISOString(), transactions: transactions||[], bazarList: bazarList||[], peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[]}, {merge:true}); }catch(e){} return; }
         const d = doc.data();
         if(!d){ cloudLoadedRef.current=true; return; }
