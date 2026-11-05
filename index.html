@@ -832,9 +832,9 @@ function TransactionForm({ t, lang, type, initial, onSave, onCancel }){
 /* ---------- Loan entry form (for a person) ---------- */
 function LoanEntryForm({ t, lang, initial, onSave, onCancel }){
   const [amount, setAmount] = useState(initial ? String(initial.amount) : loadLS('lifestyle_draft_loanentry_amount', ''));
-  const [date, setDate] = useState(initial ? initial.date : today());
-  const [fromChannel, setFromChannel] = useState(initial ? (initial.fromChannel || initial.fromMedium || initial.channel || initial.medium || initial.method || 'Cash') : loadLS('lifestyle_draft_loanentry_fromChannel', 'Cash'));
-  const [toChannel, setToChannel] = useState(initial ? (initial.toChannel || initial.toMedium || initial.to || initial.medium || initial.method || 'Cash') : loadLS('lifestyle_draft_loanentry_toChannel', 'Cash'));
+  const [date, setDate] = useState(initial ? initial.date : firstDayOfMonth());
+  const [fromChannel, setFromChannel] = useState(initial ? (initial.fromChannel || initial.fromMedium || initial.channel || initial.medium || initial.method || 'Bank Account') : loadLS('lifestyle_draft_loanentry_fromChannel', 'Bank Account'));
+  const [toChannel, setToChannel] = useState(initial ? (initial.toChannel || initial.toMedium || initial.to || initial.medium || initial.method || 'Bank Account') : loadLS('lifestyle_draft_loanentry_toChannel', 'Bank Account'));
   const [note, setNote] = useState(initial ? initial.note : loadLS('lifestyle_draft_loanentry_note', ''));
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_loanentry_amount', amount); }catch(e){} } }, [amount, initial]);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_loanentry_date', date); }catch(e){} } }, [date, initial]);
@@ -873,9 +873,9 @@ function LoanEntryForm({ t, lang, initial, onSave, onCancel }){
 /* ---------- Payment form ---------- */
 function PaymentForm({ t, lang, initial, onSave }){
   const [amount, setAmount] = useState(initial ? String(initial.amount) : loadLS('lifestyle_draft_payment_amount', ''));
-  const [date, setDate] = useState(initial ? initial.date : today());
-  const [fromChannel, setFromChannel] = useState(initial ? (initial.fromChannel || initial.fromMedium || initial.channel || initial.medium || initial.method || 'Cash') : loadLS('lifestyle_draft_payment_fromChannel', 'Cash'));
-  const [toChannel, setToChannel] = useState(initial ? (initial.toChannel || initial.toMedium || initial.to || initial.medium || initial.method || 'Cash') : loadLS('lifestyle_draft_payment_toChannel', 'Cash'));
+  const [date, setDate] = useState(initial ? initial.date : firstDayOfMonth());
+  const [fromChannel, setFromChannel] = useState(initial ? (initial.fromChannel || initial.fromMedium || initial.channel || initial.medium || initial.method || 'Bank Account') : loadLS('lifestyle_draft_payment_fromChannel', 'Bank Account'));
+  const [toChannel, setToChannel] = useState(initial ? (initial.toChannel || initial.toMedium || initial.to || initial.medium || initial.method || 'Bank Account') : loadLS('lifestyle_draft_payment_toChannel', 'Bank Account'));
   const [note, setNote] = useState(initial ? initial.note : loadLS('lifestyle_draft_payment_note', ''));
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_payment_amount', amount); }catch(e){} } }, [amount, initial]);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_payment_date', date); }catch(e){} } }, [date, initial]);
@@ -908,11 +908,11 @@ function NewPersonForm({ t, lang, existingPeople, onSave }){
   const [mobile, setMobile] = useState(loadLS('lifestyle_draft_np_mobile', ''));
   const [contactNumbers, setContactNumbers] = useState([]);
   const [showNumberPicker, setShowNumberPicker] = useState(false);
-  const [expectedReturnDate, setExpectedReturnDate] = useState(loadLS('lifestyle_draft_np_expectedReturnDate', ''));
+  const [expectedReturnDate, setExpectedReturnDate] = useState(loadLS('lifestyle_draft_np_expectedReturnDate', '') || firstDayOfMonth());
   const [amount, setAmount] = useState(loadLS('lifestyle_draft_np_amount', ''));
-  const [date, setDate] = useState('');
-  const [fromChannel, setFromChannel] = useState(loadLS('lifestyle_draft_np_fromChannel', 'Cash'));
-  const [toChannel, setToChannel] = useState(loadLS('lifestyle_draft_np_toChannel', 'Cash'));
+  const [date, setDate] = useState(firstDayOfMonth());
+  const [fromChannel, setFromChannel] = useState(loadLS('lifestyle_draft_np_fromChannel', 'Bank Account'));
+  const [toChannel, setToChannel] = useState(loadLS('lifestyle_draft_np_toChannel', 'Bank Account'));
   const [note, setNote] = useState(loadLS('lifestyle_draft_np_note', ''));
   const [contactMsg, setContactMsg] = useState('');
   useEffect(()=>{ try{ saveLS('lifestyle_draft_np_name', name); }catch(e){} }, [name]);
@@ -1057,8 +1057,8 @@ function BankLoanForm({ t, lang, initial, onSave }){
   const [amount, setAmount] = useState(initial ? String(initial.amount) : loadLS('lifestyle_draft_bank_amount', ''));
   const [term, setTerm] = useState(initial ? String(initial.termMonths) : loadLS('lifestyle_draft_bank_term', '24'));
   const [rate, setRate] = useState(initial ? String(initial.interestRate) : loadLS('lifestyle_draft_bank_rate', '9'));
-  const [disbursementDate, setDisbursementDate] = useState(initial ? (initial.disbursementDate || initial.loanDate || today()) : today());
-  const [emiStartDate, setEmiStartDate] = useState(initial ? (initial.emiStartDate || initial.loanDate || today()) : today());
+  const [disbursementDate, setDisbursementDate] = useState(initial ? (initial.disbursementDate || initial.loanDate || today()) : firstDayOfMonth());
+  const [emiStartDate, setEmiStartDate] = useState(initial ? (initial.emiStartDate || initial.loanDate || today()) : firstDayOfMonth());
   const [paidEmis, setPaidEmis] = useState(initial && initial.paidEmis ? initial.paidEmis.slice() : []);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_bank_bankName', bankName); }catch(e){} } }, [bankName, initial]);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_bank_amount', amount); }catch(e){} } }, [amount, initial]);
@@ -1206,6 +1206,7 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
   const [editingLoan, setEditingLoan] = useState(null);
   const [editingPayment, setEditingPayment] = useState(null);
   const [confirmDel, setConfirmDel] = useState(null); // {kind:'loan'|'payment'|'person', id}
+  const [confirmDelFinal, setConfirmDelFinal] = useState(null);
 
   const totalLoaned = person.loans.reduce((a,l)=>a+l.amount,0);
   const totalPaid = person.payments.reduce((a,p)=>a+p.amount,0);
@@ -1225,16 +1226,23 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
     onUpdatePerson(Object.assign({}, person, {payments}));
     setAddingPayment(false); setEditingPayment(null);
   }
-  function doDelete(){
+  function doDeleteFirst(){
     if(!confirmDel) return;
-    if(confirmDel.kind === 'loan'){
-      onUpdatePerson(Object.assign({}, person, {loans: person.loans.filter(l=>l.id!==confirmDel.id)}));
-    } else if(confirmDel.kind === 'payment'){
-      onUpdatePerson(Object.assign({}, person, {payments: person.payments.filter(p=>p.id!==confirmDel.id)}));
-    } else if(confirmDel.kind === 'person'){
+    setConfirmDelFinal(confirmDel);
+    setConfirmDel(null);
+  }
+  function doDeleteFinal(){
+    const target = confirmDelFinal || confirmDel;
+    if(!target) return;
+    if(target.kind === 'loan'){
+      onUpdatePerson(Object.assign({}, person, {loans: person.loans.filter(l=>l.id!==target.id)}));
+    } else if(target.kind === 'payment'){
+      onUpdatePerson(Object.assign({}, person, {payments: person.payments.filter(p=>p.id!==target.id)}));
+    } else if(target.kind === 'person'){
       onDeletePerson(person.id);
     }
     setConfirmDel(null);
+    setConfirmDelFinal(null);
   }
 
   const balanceLabel = kind === 'given' ? t.youWillGet : t.youOwe;
@@ -1371,7 +1379,13 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
       open: !!confirmDel, title: t.confirmDeleteTitle,
       message: confirmDel && confirmDel.kind === 'person' ? t.deletePersonMsg : t.confirmDeleteMsg,
       cancelLabel: t.cancel, confirmLabel: t.yesDelete,
-      onCancel: ()=>setConfirmDel(null), onConfirm: doDelete
+      onCancel: ()=>setConfirmDel(null), onConfirm: doDeleteFirst
+    }),
+    h(ConfirmModal, {
+      open: !!confirmDelFinal, title: lang==='en' ? 'Are you 100% sure? Delete Loan/Return/Repayment' : 'আপনি কি ১০০% নিশ্চিত? লোন/ফেরত/পরিশোধ মুছবেন?',
+      message: lang==='en' ? 'This is final confirmation. Data will be permanently deleted.' : 'এটি চূড়ান্ত নিশ্চিতকরণ। তথ্য স্থায়ীভাবে মুছে যাবে।',
+      cancelLabel: t.cancel, confirmLabel: lang==='en' ? 'Yes, I am 100% sure - Delete' : 'হ্যাঁ, আমি ১০০% নিশ্চিত - মুছুন',
+      onCancel: ()=>setConfirmDelFinal(null), onConfirm: doDeleteFinal
     })
   );
 }
@@ -5450,8 +5464,10 @@ function App(){
   const [addSheetOpen, setAddSheetOpen] = useState(false);
     const [editingTx, setEditingTx] = useState(null);
   const [confirmDelTx, setConfirmDelTx] = useState(null);
+  const [confirmDelTxFinal, setConfirmDelTxFinal] = useState(null);
   const [editingBankLoan, setEditingBankLoan] = useState(null);
   const [confirmDelBank, setConfirmDelBank] = useState(null);
+  const [confirmDelBankFinal, setConfirmDelBankFinal] = useState(null);
   const [editingHistoryLoan, setEditingHistoryLoan] = useState(null);
   const [editingHistoryPayment, setEditingHistoryPayment] = useState(null);
   const [checklistLoanId, setChecklistLoanId] = useState(null);
@@ -6745,19 +6761,35 @@ setTimeout(()=>{
         open: !!confirmDelTx, title: t.confirmDeleteTitle, message: t.confirmDeleteMsg,
         cancelLabel: t.cancel, confirmLabel: t.yesDelete,
         onCancel: ()=>setConfirmDelTx(null), onConfirm: ()=>{
-          const v = confirmDelTx;
+          setConfirmDelTxFinal(confirmDelTx);
+          setConfirmDelTx(null);
+        }
+      }),
+      h(ConfirmModal, {
+        open: !!confirmDelTxFinal, title: lang==='en' ? 'Are you 100% sure? Delete Income/Expense' : 'আপনি কি ১০০% নিশ্চিত? আয়/ব্যয় মুছবেন?',
+        message: lang==='en' ? 'Final confirmation: This Income/Expense will be permanently deleted.' : 'চূড়ান্ত নিশ্চিতকরণ: এই আয়/ব্যয় স্থায়ীভাবে মুছে যাবে।',
+        cancelLabel: t.cancel, confirmLabel: lang==='en' ? 'Yes, Delete' : 'হ্যাঁ, মুছুন',
+        onCancel: ()=>setConfirmDelTxFinal(null), onConfirm: ()=>{
+          const v = confirmDelTxFinal;
           if(!v) return;
           if(typeof v === 'object' && v.type){
             deleteHistoryEntry(v);
           } else {
             deleteTransaction(v);
           }
+          setConfirmDelTxFinal(null);
         }
       }),
       h(ConfirmModal, {
         open: !!confirmDelBank, title: t.confirmDeleteTitle, message: t.confirmDeleteMsg,
         cancelLabel: t.cancel, confirmLabel: t.yesDelete,
-        onCancel: ()=>setConfirmDelBank(null), onConfirm: ()=>deleteBankLoan(confirmDelBank)
+        onCancel: ()=>setConfirmDelBank(null), onConfirm: ()=>{ setConfirmDelBankFinal(confirmDelBank); setConfirmDelBank(null); }
+      }),
+      h(ConfirmModal, {
+        open: !!confirmDelBankFinal, title: lang==='en' ? 'Are you 100% sure? Delete Bank Loan' : 'আপনি কি ১০০% নিশ্চিত? ব্যাংক লোন মুছবেন?',
+        message: lang==='en' ? 'Final confirmation: Bank loan will be permanently deleted.' : 'চূড়ান্ত নিশ্চিতকরণ: ব্যাংক লোন স্থায়ীভাবে মুছে যাবে।',
+        cancelLabel: t.cancel, confirmLabel: lang==='en' ? 'Yes, Delete Bank Loan' : 'হ্যাঁ, ব্যাংক লোন মুছুন',
+        onCancel: ()=>setConfirmDelBankFinal(null), onConfirm: ()=>{ if(confirmDelBankFinal) deleteBankLoan(confirmDelBankFinal.id || confirmDelBankFinal); setConfirmDelBankFinal(null); }
       }),
       h(ConfirmModal, {
         open: confirmClearOpen, title: t.clearData, message: t.confirmDeleteMsg,
