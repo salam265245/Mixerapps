@@ -4716,7 +4716,7 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
     }
     if(typeof setToast==='function') setToast('✓ '+itemName+' কেনা - ৳'+amt+' ব্যয় খাতে যোগ হয়েছে');
     try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'bazar_bought', item: updated}); }catch(e){}
-    try{ if(googleUser && googleUser.uid && syncToCloud) setTimeout(function(){ syncToCloud(googleUser); }, 120); }catch(e){}
+    try{ if(googleUser && googleUser.uid && syncToCloud) try{ syncToCloud(googleUser); }catch(e){}; }catch(e){}
   }
 
   function markNo(item){
@@ -4748,7 +4748,7 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
       }
       if(typeof setToast==='function') setToast('No করা হয়েছে - ব্যয় থেকে বাদ গেছে (৳0)');
       try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'bazar_deleted', id: item.id}); }catch(e){}
-      try{ if(googleUser && googleUser.uid && syncToCloud) setTimeout(function(){ syncToCloud(googleUser); }, 120); }catch(e){}
+      try{ if(googleUser && googleUser.uid && syncToCloud) try{ syncToCloud(googleUser); }catch(e){}; }catch(e){}
     }
   }
   function deleteItem(id){
@@ -4782,7 +4782,7 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
     }catch(e){}
     if(typeof setToast==='function') setToast('আইটেম মুছেছে - ব্যয় থেকেও বাদ গেছে');
     try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'bazar_deleted', id}); }catch(e){}
-    try{ if(typeof googleUser !== 'undefined' && googleUser && googleUser.uid) setTimeout(function(){ syncToCloud(googleUser); }, 50); }catch(e){}
+    try{ if(typeof googleUser !== 'undefined' && googleUser && googleUser.uid) try{ syncToCloud(googleUser); }catch(e){}; }catch(e){}
   }
 
   // Hide parent BottomSheet header "Today Bazar" when confirm popup is open
@@ -5301,6 +5301,8 @@ function App(){
       const db = firebase.firestore();
       const now = new Date().toISOString();
       const deviceId = localStorage.getItem('lifestyle_device_id') || (localStorage.setItem('lifestyle_device_id', uid()), localStorage.getItem('lifestyle_device_id'));
+      // FIX INSTANT: Force enable network to ensure instant sync (disable offline cache delay)
+      try{ db.enableNetwork(); }catch(e){}
       // FIX V18.2 Step1: State is truth, no localStorage length hack
       let latestBazar = Array.isArray(bazarList) ? bazarList : [];
       let latestTx = Array.isArray(transactions) ? transactions : [];
@@ -5322,7 +5324,7 @@ function App(){
         const timeStr = new Date(now).toLocaleString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
         saveLS('lifestyle_last_sync_formatted', timeStr);
         setLastSyncTime(timeStr);
-        setSyncStatus('✓ Synced ' + new Date().toLocaleTimeString('bn-BD') + ' ('+(latestBazar||[]).length+' bazar)');
+        setSyncStatus('✓ Synced instantly ' + new Date().toLocaleTimeString('bn-BD') + ' ('+(latestBazar||[]).length+' bazar)');
         lastCloudDataRef.current = data;
         saveLS('lifestyle_offline_pending','false');
         setOfflineQueue(false);
@@ -5333,22 +5335,29 @@ function App(){
   function syncFromCloud(user){
     if(!user || !user.uid) return;
     try{
-      if(unsubscribeRef.current){ unsubscribeRef.current(); }
+      if(unsubscribeRef.current){ try{ unsubscribeRef.current(); }catch(e){} }
       const db = firebase.firestore();
-      unsubscribeRef.current = db.collection('users').doc(user.uid).onSnapshot({includeMetadataChanges: false}, doc=>{
+      // FORCE NETWORK - instant
+      try{ db.enableNetwork(); }catch(e){}
+      unsubscribeRef.current = db.collection('users').doc(user.uid).onSnapshot({includeMetadataChanges: true}, doc=>{
         if(!doc.exists){ cloudLoadedRef.current=true; try{ db.collection('users').doc(user.uid).set({createdAt: new Date().toISOString(), transactions: transactions||[], bazarList: bazarList||[], peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[]}, {merge:true}); }catch(e){} return; }
         const d = doc.data();
         if(!d){ cloudLoadedRef.current=true; return; }
         const isFirstLoad = !cloudLoadedRef.current;
+        // ULTIMATE INSTANT: Never block cross-device updates - same Gmail = instant everywhere
         const localDeviceId = localStorage.getItem('lifestyle_device_id') || '';
-        const isOwnWrite = d.deviceId && localDeviceId && d.deviceId === localDeviceId && !isFirstLoad;
-        if(isOwnWrite){
+        const cloudDeviceId = d.deviceId || '';
+        // Even if same device, if cloud has newer data (different updatedAt), accept it
+        const lastLocalUpdate = lastCloudDataRef.current && lastCloudDataRef.current.updatedAt ? new Date(lastCloudDataRef.current.updatedAt).getTime() : 0;
+        const cloudUpdate = d.updatedAt ? new Date(d.updatedAt).getTime() : 0;
+        const isSameDeviceRecentDuplicate = (cloudDeviceId && localDeviceId && cloudDeviceId===localDeviceId && !isFirstLoad && Math.abs(cloudUpdate-lastLocalUpdate) < 1500);
+        if(isSameDeviceRecentDuplicate){
           lastCloudDataRef.current = d;
-          saveLS('lifestyle_last_sync', Date.now());
           cloudLoadedRef.current=true;
           return;
         }
-        const cloudTime = d.updatedAt ? new Date(d.updatedAt).getTime() : 0;
+        // Skip if from cache only and not first load
+        if(doc.metadata && doc.metadata.fromCache && !isFirstLoad){ return; }
         isSyncingFromCloudRef.current = true;
         try{
           const tToday = today();
@@ -5452,11 +5461,25 @@ function App(){
   useEffect(()=>{
     if(googleUser){ 
       syncFromCloud(googleUser);
-      var pollId = setInterval(function(){ try{ syncFromCloud(googleUser); }catch(e){} }, 10000);
-      return ()=>{ if(unsubscribeRef.current) unsubscribeRef.current(); clearInterval(pollId); }
+      // ULTIMATE INSTANT: Resync on app visible, online, focus - for any number of devices
+      const onVisible = ()=>{ if(document.visibilityState==='visible' && googleUser){ try{ firebase.firestore().enableNetwork(); }catch(e){} try{ syncFromCloud(googleUser); }catch(e){} } };
+      const onOnline = ()=>{ if(googleUser){ try{ firebase.firestore().enableNetwork(); }catch(e){} try{ syncFromCloud(googleUser); }catch(e){} } };
+      const onFocus = ()=>{ if(googleUser){ try{ syncFromCloud(googleUser); }catch(e){} } };
+      document.addEventListener('visibilitychange', onVisible);
+      window.addEventListener('online', onOnline);
+      window.addEventListener('focus', onFocus);
+      // Also force sync every 5 sec if app is open (backup for instant)
+      var fastPoll = setInterval(()=>{ if(googleUser && document.visibilityState==='visible'){ try{ firebase.firestore().enableNetwork(); }catch(e){} } }, 5000);
+      return ()=>{ 
+        if(unsubscribeRef.current) { try{ unsubscribeRef.current(); }catch(e){} unsubscribeRef.current=null; } 
+        document.removeEventListener('visibilitychange', onVisible);
+        window.removeEventListener('online', onOnline);
+        window.removeEventListener('focus', onFocus);
+        clearInterval(fastPoll);
+      }
     }
-    else { if(unsubscribeRef.current){ unsubscribeRef.current(); unsubscribeRef.current=null; } cloudLoadedRef.current=false; }
-    return ()=>{ if(unsubscribeRef.current) unsubscribeRef.current(); }
+    else { if(unsubscribeRef.current){ try{ unsubscribeRef.current(); }catch(e){} unsubscribeRef.current=null; } cloudLoadedRef.current=false; }
+    return ()=>{ if(unsubscribeRef.current) { try{ unsubscribeRef.current(); }catch(e){} unsubscribeRef.current=null; } }
   }, [googleUser]);
 
 
@@ -5605,7 +5628,7 @@ setTimeout(()=>{
         if(typeof setTxDeletedIds === 'function') setTxDeletedIds(filtered);
       }
     }catch(e){}
-    try{ if(typeof googleUser !== 'undefined' && googleUser && googleUser.uid) setTimeout(function(){ syncToCloud(googleUser); }, 50); }catch(e){}
+    try{ if(typeof googleUser !== 'undefined' && googleUser && googleUser.uid) try{ syncToCloud(googleUser); }catch(e){}; }catch(e){}
   }
   function deleteTransaction(id){
     let toDeleteRef = null;
@@ -5654,12 +5677,12 @@ setTimeout(()=>{
       return [{ id: uid(), name: data.name, mobile: data.mobile, loans:[loanEntry], payments:[] }, ...list];
     });
     setToast(lang==='en'?'Saved':'সংরক্ষিত হয়েছে');
-    try{ if(typeof googleUser !== 'undefined' && googleUser && googleUser.uid) setTimeout(function(){ syncToCloud(googleUser); }, 50); }catch(e){}
+    try{ if(typeof googleUser !== 'undefined' && googleUser && googleUser.uid) try{ syncToCloud(googleUser); }catch(e){}; }catch(e){}
   }
   function updatePerson(kind, updated){
     const setPeople = kind==='given' ? setPeopleGiven : setPeopleTaken;
     setPeople(function(list){ var updatedList = list.map(function(p){ return p.id===updated.id ? updated : p; }); try{ var key = kind==='given' ? 'lifestyle_people_given' : 'lifestyle_people_taken'; localStorage.setItem(key, JSON.stringify(updatedList)); }catch(e){} return updatedList; });
-    try{ if(typeof googleUser !== 'undefined' && googleUser && googleUser.uid) setTimeout(function(){ syncToCloud(googleUser); }, 50); }catch(e){}
+    try{ if(typeof googleUser !== 'undefined' && googleUser && googleUser.uid) try{ syncToCloud(googleUser); }catch(e){}; }catch(e){}
   }
   function deletePerson(kind, id){
     const list = kind==='given' ? peopleGiven : peopleTaken;
@@ -5700,13 +5723,13 @@ setTimeout(()=>{
       try{ localStorage.setItem('lifestyle_bank_loans', JSON.stringify(updated)); }catch(e){}
       return updated;
     });
-    try{ if(typeof googleUser !== 'undefined' && googleUser && googleUser.uid) setTimeout(function(){ syncToCloud(googleUser); }, 50); }catch(e){}
+    try{ if(typeof googleUser !== 'undefined' && googleUser && googleUser.uid) try{ syncToCloud(googleUser); }catch(e){}; }catch(e){}
     setAddType(null); setEditingBankLoan(null);
   }
   function deleteBankLoan(id){
     setBankLoans(function(list){ var updated = list.filter(function(x){ return x.id!==id; }); try{ localStorage.setItem('lifestyle_bank_loans', JSON.stringify(updated)); var del = JSON.parse(localStorage.getItem('lifestyle_bankloan_deleted_ids')||'[]'); del = Array.from(new Set([].concat(Array.isArray(del)?del:[], [id]))); localStorage.setItem('lifestyle_bankloan_deleted_ids', JSON.stringify(del)); }catch(e){} return updated; });
     setConfirmDelBank(null);
-    try{ if(typeof googleUser !== 'undefined' && googleUser && googleUser.uid) setTimeout(function(){ syncToCloud(googleUser); }, 50); }catch(e){}
+    try{ if(typeof googleUser !== 'undefined' && googleUser && googleUser.uid) try{ syncToCloud(googleUser); }catch(e){}; }catch(e){}
   }
   function handleHistoryEdit(x){
     if(x.type==='income' || x.type==='expense'){
