@@ -7429,7 +7429,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(h(App));
 
 
 
-<!-- ===== Lifestyle V30 Auto Update No Click ===== -->
+
+
+<!-- ===== Lifestyle V32 No Loss Merge ===== -->
 <style>
 #lsSyncBtn{position:fixed;top:8px;right:8px;z-index:99999;background:#1a73e8;color:#fff;border:none;width:86px;height:34px;border-radius:999px;font-weight:700;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer;white-space:nowrap;display:flex;align-items:center;justify-content:center}
 #lsSyncDot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#7CFC00;margin-right:4px;flex-shrink:0}
@@ -7457,41 +7459,88 @@ import {getFirestore, doc, setDoc, getDoc, onSnapshot} from "https://www.gstatic
 let app=null,auth=null,db=null,currentUser=null,unsub=null;
 let deviceId=sessionStorage.getItem('__ls_device_id')||('dev-'+Math.random().toString(36).slice(2,9)); sessionStorage.setItem('__ls_device_id',deviceId);
 const CORE_KEYS=['lifestyle_transactions','lifestyle_v3_transactions','lifestyle_v3_bankLoans','lifestyle_v3_loansGiven','lifestyle_v3_loansTaken','lifestyle_bank_loans','lifestyle_bazar_list','lifestyle_travel_list','lifestyle_people_given','lifestyle_people_taken','lifestyle_people_trash','lifestyle_daily_tasks','market_surveys_list','market_survey_form','lifestyle_user_name','lifestyle_user_mobile','lifestyle_user_address','lifestyle_user_designation','lifestyle_profile_photo','lifestyle_expense_categories_v18','lifestyle_bankloan_deleted_ids','lifestyle_bazar_deleted_ids','lifestyle_people_deleted_ids','lifestyle_tx_deleted_ids','travel_others_note'];
-let lastPushedHash='', lastAppliedTs=0, isApplying=false, reloadTimer=null;
+const LIST_KEYS=new Set(['lifestyle_transactions','lifestyle_v3_transactions','lifestyle_bank_loans','lifestyle_bazar_list','lifestyle_travel_list','lifestyle_daily_tasks','market_surveys_list']);
+let lastPushedHash='', lastAppliedTs=0, isApplying=false, pendingReload=false;
 function collect(){ const o={}; CORE_KEYS.forEach(k=>{ try{ const v=localStorage.getItem(k); if(v!==null) o[k]=v; }catch(e){} }); return o; }
 function hash(s){ let h=0; for(let i=0;i<s.length;i++){ h=((h<<5)-h)+s.charCodeAt(i); h|=0; } return String(h); }
 function dbg(m){ const el=document.getElementById('lsSyncDebug'); if(el) el.textContent='Device: '+deviceId+' | '+m; }
-// Page restore: reload er por eki page + eki scroll e firbe, Home e jabe na
-try{ const savedY=sessionStorage.getItem('__ls_scrollY'); const savedPage=sessionStorage.getItem('__ls_last_page'); if(savedY){ setTimeout(()=>{ window.scrollTo(0,parseInt(savedY)); sessionStorage.removeItem('__ls_scrollY'); },600); } }catch(e){}
+function itemKey(it){
+  if(!it||typeof it!=='object') return JSON.stringify(it);
+  if(it.id) return 'id:'+it.id;
+  return 'c:'+(it.date||'')+'|'+(it.amount||it.amt||'')+'|'+(it.type||it.addType||it.kind||'')+'|'+(it.category||it.note||it.name||'');
+}
+// MERGE - kono tothyo harabe na: local + cloud er UNION. Eki id hole cloud er notun ta, alada id hole duitai thakbe.
+function mergeData(local, cloud){
+  const out={};
+  const allKeys=new Set([...Object.keys(local||{}), ...Object.keys(cloud||{})]);
+  allKeys.forEach(k=>{
+    if(LIST_KEYS.has(k)){
+      let la=[], ca=[];
+      try{ la=JSON.parse(local[k]||'[]'); }catch(e){ la=[]; }
+      try{ ca=JSON.parse(cloud[k]||'[]'); }catch(e){ ca=[]; }
+      if(!Array.isArray(la)) la=[]; if(!Array.isArray(ca)) ca=[];
+      const map=new Map();
+      la.forEach(it=>map.set(itemKey(it),it));
+      ca.forEach(it=>{ map.set(itemKey(it),it); }); // cloud er ta pore boslo - edit hole notun ta jitbe, notun entry hole jog hobe
+      // Deleted ids thakle segulo bad
+      const delRaw = local['lifestyle_tx_deleted_ids']||cloud['lifestyle_tx_deleted_ids']||local['lifestyle_bazar_deleted_ids']||'[]';
+      let del=[]; try{ del=JSON.parse(delRaw); }catch(e){}
+      let arr=[...map.values()];
+      if(Array.isArray(del)&&del.length){ arr=arr.filter(it=>!del.includes(it.id)); }
+      out[k]=JSON.stringify(arr);
+    } else {
+      // Single value / object: cloud thakle cloud, na thakle local. Kintu local e notun lekha thakle seta merge e pore push e jabe.
+      out[k]= (cloud[k]!==undefined && cloud[k]!==null && cloud[k]!=='') ? cloud[k] : (local[k]||'');
+      // Jodi local ta cloud theke alada ar local ta notun hoy, tahole local kei rakhi - pore push e union hobe
+      if(local[k] && cloud[k] && local[k]!==cloud[k] && k.includes('user_')) out[k]=local[k];
+    }
+  });
+  return out;
+}
+function patchHomeNumbers(){
+  try{
+    const raw=localStorage.getItem('lifestyle_transactions')||localStorage.getItem('lifestyle_v3_transactions')||'[]';
+    const arr=JSON.parse(raw); if(!Array.isArray(arr)) return;
+    const now=new Date(), ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'), today=now.toISOString().slice(0,10);
+    let incM=0, expT=0, expM=0;
+    arr.forEach(tx=>{ const amt=parseFloat(tx.amount||tx.amt||0)||0; const ty=String(tx.type||tx.addType||tx.kind||'').toLowerCase(); const d=String(tx.date||tx.createdAt||'').slice(0,10); const isInc=ty==='income'||ty==='আয়'||tx.isIncome===true; if(isInc){ if(d.startsWith(ym)) incM+=amt; } else { if(d===today) expT+=amt; if(d.startsWith(ym)) expM+=amt; } });
+    const fmt=n=>'৳ '+n.toLocaleString('en-IN'); const vals=[fmt(incM),fmt(expT),fmt(expM)];
+    const els=[...document.querySelectorAll('*')].filter(e=>e.children.length===0 && e.textContent.includes('৳'));
+    const nums=els.filter(e=>/^\s*৳\s*[\d,]+/.test(e.textContent));
+    if(nums.length>=3){ nums[0].textContent=vals[0]; nums[1].textContent=vals[1]; nums[2].textContent=vals[2]; }
+    const dot=document.getElementById('lsSyncDot'); if(dot){ dot.style.transform='scale(1.6)'; setTimeout(()=>dot.style.transform='scale(1)',300); }
+  }catch(e){}
+}
+// PUSH: age cloud theke tene merge kore tarpor push - tahole onno device er lekha muchbe na
 async function push(force){
   if(!currentUser||!db||isApplying) return;
-  const data=collect(); const h=hash(JSON.stringify(data));
+  const local=collect(); const h=hash(JSON.stringify(local));
   if(h===lastPushedHash && !force) return;
-  try{ const ts=Date.now(); await setDoc(doc(db,'users',currentUser.uid,'sync','main'),{data,updatedAt:ts,fromDevice:deviceId,email:currentUser.email}); lastPushedHash=h; }catch(e){}
+  try{
+    let merged=local;
+    try{ const snap=await getDoc(doc(db,'users',currentUser.uid,'sync','main')); if(snap.exists() && snap.data() && snap.data().data){ merged=mergeData(local, snap.data().data); } }catch(e){}
+    const mh=hash(JSON.stringify(merged));
+    // Merged ta local e o likhe rakhi, jate local e o sob thake
+    isApplying=true; Object.keys(merged).forEach(k=>{ try{localStorage.setItem(k,merged[k]);}catch(e){} }); isApplying=false;
+    const ts=Date.now(); await setDoc(doc(db,'users',currentUser.uid,'sync','main'),{data:merged,updatedAt:ts,fromDevice:deviceId,email:currentUser.email}); lastPushedHash=mh; patchHomeNumbers();
+  }catch(e){ dbg('Push fail '+e.message); }
 }
 async function pull(){
   if(!currentUser||!db) return;
-  try{ const snap=await getDoc(doc(db,'users',currentUser.uid,'sync','main')); if(!snap.exists()) return; const d=snap.data(); if(!d||!d.data) return; if(d.fromDevice===deviceId) return; applyAuto(d.data,d.updatedAt); }catch(e){}
+  try{ const snap=await getDoc(doc(db,'users',currentUser.uid,'sync','main')); if(!snap.exists()) return; const d=snap.data(); if(!d||!d.data) return; if(d.fromDevice===deviceId) return; applyMerge(d.data,d.updatedAt); }catch(e){}
 }
-// AUTO UPDATE - kono click lagbe na. Kintu form e type korle tokhon reload hobe na, type sesh hole hobe.
-function applyAuto(data,ts){
-  if(!data||!ts) return; if(ts===lastAppliedTs) return;
-  try{ if(sessionStorage.getItem('__ls_reloaded_ts')===String(ts)) return; }catch(e){}
-  const curH=hash(JSON.stringify(collect())); const cloudH=hash(JSON.stringify(data));
-  if(cloudH===curH){ lastAppliedTs=ts; return; }
-  lastAppliedTs=ts; lastPushedHash=cloudH;
+function applyMerge(cloudData,ts){
+  if(!cloudData||!ts) return; if(ts===lastAppliedTs) return;
+  try{ if(sessionStorage.getItem('__ls_applied_ts')===String(ts)) return; sessionStorage.setItem('__ls_applied_ts',String(ts)); }catch(e){}
+  const local=collect();
+  const merged=mergeData(local, cloudData);
+  const mh=hash(JSON.stringify(merged)); const curH=hash(JSON.stringify(local));
+  if(mh===curH){ lastAppliedTs=ts; return; }
+  lastAppliedTs=ts; lastPushedHash=mh; pendingReload=true;
   isApplying=true;
-  try{ Object.keys(data).forEach(k=>{ if(!CORE_KEYS.includes(k)) return; try{localStorage.setItem(k,data[k]);}catch(e){} }); }catch(e){}
+  try{ Object.keys(merged).forEach(k=>{ try{localStorage.setItem(k,merged[k]);}catch(e){} }); }catch(e){}
   isApplying=false;
-  // Auto reload schedule - jodi user form e likhche, tahole 5 sec por abar check
-  const doReload=()=>{
-    const ae=document.activeElement;
-    const typing = ae && (ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'||ae.tagName==='SELECT');
-    if(typing){ clearTimeout(reloadTimer); reloadTimer=setTimeout(doReload,5000); return; }
-    try{ sessionStorage.setItem('__ls_reloaded_ts',String(ts)); sessionStorage.setItem('__ls_scrollY',String(window.scrollY)); sessionStorage.setItem('__ls_last_page',localStorage.getItem('lifestyle_last_page')||''); }catch(e){}
-    location.reload();
-  };
-  clearTimeout(reloadTimer); reloadTimer=setTimeout(doReload,1200);
+  patchHomeNumbers();
 }
 function init(){
   const raw=localStorage.getItem('lifestyle_firebase_config'); if(!raw) return;
@@ -7501,7 +7550,7 @@ function init(){
 }
 function startListener(){
   if(!db||!currentUser||unsub) return;
-  unsub=onSnapshot(doc(db,'users',currentUser.uid,'sync','main'),(snap)=>{ if(!snap.exists()) return; const d=snap.data(); if(!d||!d.data) return; if(d.fromDevice===deviceId) return; if(!d.updatedAt||d.updatedAt===lastAppliedTs) return; applyAuto(d.data,d.updatedAt); });
+  unsub=onSnapshot(doc(db,'users',currentUser.uid,'sync','main'),(snap)=>{ if(!snap.exists()) return; const d=snap.data(); if(!d||!d.data) return; if(d.fromDevice===deviceId) return; if(!d.updatedAt||d.updatedAt===lastAppliedTs) return; applyMerge(d.data,d.updatedAt); });
 }
 window.lsGoogleLogin=async()=>{ if(!auth) return; try{ await signInWithPopup(auth,new GoogleAuthProvider()); document.getElementById('lsSyncModal').style.display='none'; }catch(e){ alert('লগইন হয়নি: '+e.message); } };
 window.lsLogout=async()=>{ try{ if(auth) await signOut(auth); if(unsub){unsub();unsub=null;} currentUser=null; }catch(e){} };
@@ -7510,8 +7559,14 @@ window.lsPullNow=async()=>{ await pull(); };
 window.lsResetCloud=async()=>{
   if(!confirm('শুধু টেস্ট আয় মুছে যাবে। ব্যয়, বাজার, ট্রাভেল সব ঠিক থাকবে। নিশ্চিত?')) return;
   try{ let deleted=0; ['lifestyle_transactions','lifestyle_v3_transactions'].forEach(key=>{ try{ const raw=localStorage.getItem(key); if(!raw) return; const arr=JSON.parse(raw); if(!Array.isArray(arr)) return; const kept=arr.filter(tx=>{ const ty=String(tx.type||tx.addType||tx.kind||'').toLowerCase(); const isIncome=ty==='income'||ty==='আয়'||tx.isIncome===true||tx.addType==='income'; if(isIncome){deleted++; return false;} return true; }); localStorage.setItem(key,JSON.stringify(kept)); }catch(e){} });
-    lastPushedHash=''; await push(true); alert('হয়ে গেছে! '+deleted+' টা টেস্ট আয় মুছেছে। ব্যয় ঠিক আছে।'); }catch(e){ alert('হয়নি: '+e.message); }
+    lastPushedHash=''; await push(true); patchHomeNumbers(); alert('হয়ে গেছে! '+deleted+' টা টেস্ট আয় মুছেছে। ব্যয় ঠিক আছে।'); }catch(e){ alert('হয়নি: '+e.message); }
 };
+document.addEventListener('click',(e)=>{
+  if(!pendingReload) return;
+  if(e.target.closest('#lsSyncModal')||e.target.closest('#lsSyncBtn')) return;
+  const btn=e.target.closest('button, a, [onclick]'); if(!btn) return;
+  pendingReload=false; setTimeout(()=>{ location.reload(); },80);
+},true);
 document.getElementById('lsSyncBtn').onclick=()=>{ document.getElementById('lsSyncModal').style.display='flex'; };
 document.getElementById('lsSyncModal').onclick=(e)=>{ if(e.target.id==='lsSyncModal') e.target.style.display='none'; };
 init();
@@ -7519,5 +7574,5 @@ setInterval(()=>{ if(currentUser) push(false); },6000);
 window.addEventListener('pagehide',()=>{ if(currentUser) push(true); });
 document.addEventListener('visibilitychange',()=>{ if(document.hidden && currentUser) push(true); });
 </script>
-<!-- ===== /Lifestyle V30 ===== -->
+<!-- ===== /Lifestyle V32 ===== -->
 </body>
