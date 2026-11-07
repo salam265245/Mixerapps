@@ -7467,9 +7467,18 @@ function collectData(){
   const out={}; for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i); if(!k) continue; if(SYNC_KEYS_PREFIX.some(p=>k.startsWith(p)) && k!=="lifestyle_firebase_config"){ try{out[k]=localStorage.getItem(k);}catch(e){} } }
   return out;
 }
+function _hash(s){ let h=0; for(let i=0;i<s.length;i++){ h=((h<<5)-h)+s.charCodeAt(i); h|=0; } return h; }
 function applyData(data){
-  if(!data) return; isApplying=true;
-  try{ Object.keys(data).forEach(k=>{ try{localStorage.setItem(k,data[k]);}catch(e){} }); }finally{ setTimeout(()=>{isApplying=false; location.reload();},300); }
+  if(!data) return;
+  // same data hole abar apply korbo na
+  const curHash=_hash(JSON.stringify(collectData()));
+  const newHash=_hash(JSON.stringify(data));
+  if(curHash===newHash) return;
+  isApplying=true;
+  try{ Object.keys(data).forEach(k=>{ try{localStorage.setItem(k,data[k]);}catch(e){} }); }catch(e){}
+  try{ sessionStorage.setItem('ls_just_applied', String(Date.now())); localStorage.setItem('lifestyle_last_sync', String(lastCloudTs||Date.now())); }catch(e){}
+  // Ekbar matro reload, tarpor ar prompt asbe na. Reload er age flag rakha thakbe.
+  setTimeout(()=>{ location.reload(); },400);
 }
 function setUI(txt,ok){ const t=document.getElementById('lsSyncTxt'); const d=document.getElementById('lsSyncDot'); if(t) t.textContent=txt; if(d) d.style.background=ok?'#0f9d58':'#ff5252'; const s=document.getElementById('lsSyncStatus'); if(s) s.textContent=txt; }
 window.lsSaveConfig=()=>{ const v=document.getElementById('lsFbConfig').value.trim(); try{ const j=JSON.parse(v); if(!j.apiKey||!j.projectId) throw new Error('bad'); localStorage.setItem('lifestyle_firebase_config',v); alert('Config সেভ হয়েছে! এখন Gmail দিয়ে লগইন করুন।'); initFirebase(); }catch(e){ alert('Config ঠিক হয়নি। Firebase থেকে পুরো JSON কপি করে পেস্ট করুন।'); } };
@@ -7479,13 +7488,16 @@ function initFirebase(){
     onAuthStateChanged(auth,(u)=>{ currentUser=u; if(u){ setUI('Sync: '+u.email,true); document.getElementById('lsSyncInfo').innerHTML='লগইন: <b>'+u.email+'</b><br>এই Gmail দিয়েই বাকি সব ডিভাইসে লগইন করবেন।'; startListener(); pushToCloud(); } else { setUI('Sync: লগইন করুন',false); } });
   }catch(e){ setUI('Sync: Config ভুল',false); }
 }
+let _lastPushedHash='';
 async function pushToCloud(){
   if(!currentUser||!db||isApplying) return;
+  try{ const ja=parseInt(sessionStorage.getItem('ls_just_applied')||'0'); if(Date.now()-ja < 10000) return; }catch(e){}
+  const _h=_hash(JSON.stringify(collectData())); if(_h===_lastPushedHash) return; _lastPushedHash=_h;
   try{ const data=collectData(); const ts=Date.now(); await setDoc(doc(db,'users',currentUser.uid,'sync','main'),{data,updatedAt:ts,email:currentUser.email},{merge:true}); lastCloudTs=ts; localStorage.setItem('lifestyle_last_sync',String(ts)); setUI('Sync: ✅ আপডেট হয়েছে',true); }catch(e){ console.log(e); setUI('Sync: নেট নাই, পরে হবে',false); }
 }
 function startListener(){
   if(!db||!currentUser||unsub) return;
-  unsub=onSnapshot(doc(db,'users',currentUser.uid,'sync','main'),(snap)=>{ if(!snap.exists()) return; const d=snap.data(); if(!d||!d.data) return; if(d.updatedAt && d.updatedAt<=lastCloudTs) return; if(d.updatedAt && d.updatedAt > (parseInt(localStorage.getItem('lifestyle_last_sync')||'0'))){ lastCloudTs=d.updatedAt; if(confirm('অন্য ডিভাইস থেকে নতুন তথ্য এসেছে। এই ডিভাইসে আপডেট করবো?')){ applyData(d.data); } } });
+  unsub=onSnapshot(doc(db,'users',currentUser.uid,'sync','main'),(snap)=>{ if(!snap.exists()) return; const d=snap.data(); if(!d||!d.data) return; if(d.updatedAt && d.updatedAt<=lastCloudTs) return; const localTs=parseInt(localStorage.getItem('lifestyle_last_sync')||'0'); if(d.updatedAt && d.updatedAt > localTs){ lastCloudTs=d.updatedAt; _lastPushedHash=_hash(JSON.stringify(d.data)); applyData(d.data); } });
 }
 window.lsGoogleLogin=async()=>{ if(!auth){ alert('আগে Firebase Config সেভ করুন।'); return; } try{ const p=new GoogleAuthProvider(); await signInWithPopup(auth,p); document.getElementById('lsSyncModal').style.display='none'; }catch(e){ alert('লগইন হয়নি: '+e.message); } };
 window.lsLogout=async()=>{ try{ if(auth) await signOut(auth); if(unsub){unsub();unsub=null;} currentUser=null; setUI('Sync: লগইন করুন',false); }catch(e){} };
