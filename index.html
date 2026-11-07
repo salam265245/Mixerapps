@@ -7426,9 +7426,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(h(App));
 
 <script>window.__EMBEDDED_FB_CONFIG = {"apiKey":"AIzaSyDn4xc_Z2etlIEVzuNtHcR-2-3B81D2kaU","authDomain":"lifestyle-app-d4bc0.firebaseapp.com","projectId":"lifestyle-app-d4bc0","storageBucket":"lifestyle-app-d4bc0.firebasestorage.app","messagingSenderId":"494296989508","appId":"1:494296989508:web:aa6b3aa501e3f65fcd2111"}; try{ if(!localStorage.getItem('lifestyle_firebase_config')) localStorage.setItem('lifestyle_firebase_config', JSON.stringify(window.__EMBEDDED_FB_CONFIG)); }catch(e){} </script>
 
-<!-- ===== Lifestyle V25 Stable Sync ===== -->
+
+<!-- ===== Lifestyle V28 Income Only Delete - FIXED ===== -->
 <style>
-#lsSyncBtn{position:fixed;top:8px;right:8px;z-index:99999;background:#1a73e8;color:#fff;border:none;width:86px;height:34px;border-radius:999px;font-weight:700;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer;white-space:nowrap;overflow:hidden;flex-shrink:0}
+#lsSyncBtn{position:fixed;top:8px;right:8px;z-index:99999;background:#1a73e8;color:#fff;border:none;width:86px;height:34px;border-radius:999px;font-weight:700;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer;white-space:nowrap}
 #lsSyncDot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#7CFC00;margin-right:4px}
 #lsSyncToast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:100001;background:#222;color:#fff;padding:10px 14px;border-radius:999px;font-size:13px;display:none;box-shadow:0 4px 16px rgba(0,0,0,.3);white-space:nowrap}
 #lsSyncModal{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:16px}
@@ -7437,12 +7438,15 @@ ReactDOM.createRoot(document.getElementById('root')).render(h(App));
 .btnG{background:#1a73e8;color:#fff}.btnOut{background:#eee;color:#222}
 </style>
 <button id="lsSyncBtn"><span id="lsSyncDot"></span><span id="lsSyncTxt">Sync</span></button>
-<div id="lsSyncToast">নতুন তথ্য এসেছে • <b id="lsToastRefresh" style="color:#8ab4ff;text-decoration:underline;cursor:pointer">Refresh করুন</b></div>
+<div id="lsSyncToast">✅ নতুন তথ্য এসেছে, আপডেট হচ্ছে...</div>
 <div id="lsSyncModal"><div id="lsSyncCard">
 <h3 style="margin:0 0 6px">🔄 Gmail Sync</h3>
 <p id="lsSyncInfo" style="font-size:13.5px;line-height:1.6;color:#444">একই Gmail দিয়ে সব ডিভাইসে লগইন করুন।</p>
+<p id="lsSyncDebug" style="font-size:11px;color:#888;word-break:break-all"></p>
 <button class="btnG" onclick="lsGoogleLogin()">📧 Gmail দিয়ে লগইন</button>
-<button class="btnOut" onclick="lsManualSync()">↻ এখনই Sync করুন</button>
+<button class="btnOut" onclick="lsManualSync()">↻ এখনই Sync করুন (Force Push)</button>
+<button class="btnOut" onclick="lsPullNow()">⬇ অন্য ডিভাইসের তথ্য টেনে আনুন</button>
+<button class="btnOut" style="background:#ff5252;color:#fff" onclick="lsResetCloud()">🗑️ শুধু টেস্ট আয় মুছুন (ব্যয় থাকবে)</button>
 <button class="btnOut" onclick="lsLogout()">লগআউট</button>
 <button class="btnOut" onclick="document.getElementById('lsSyncModal').style.display='none'">বন্ধ করুন</button>
 <p id="lsSyncStatus" style="font-size:12.5px;color:#0f9d58"></p>
@@ -7450,54 +7454,99 @@ ReactDOM.createRoot(document.getElementById('root')).render(h(App));
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {getFirestore, doc, setDoc, getDoc, onSnapshot} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {getFirestore, doc, setDoc, getDoc, onSnapshot, deleteDoc} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 let app=null,auth=null,db=null,currentUser=null,unsub=null;
-let deviceId=localStorage.getItem('lifestyle_device_id')||('dev-'+Math.random().toString(36).slice(2,9)); localStorage.setItem('lifestyle_device_id',deviceId);
-let lastCloudTs=parseInt(localStorage.getItem('lifestyle_last_sync')||'0');
-let lastPushedHash='', lastSeenHash='', suppressUntil=0, isApplying=false;
+// FIX 1: deviceId kokhono localStorage er lifestyle_ key te rakhbo na, tahole sync hoye jeto
+let deviceId=sessionStorage.getItem('__ls_device_id')||('dev-'+Math.random().toString(36).slice(2,9)); sessionStorage.setItem('__ls_device_id',deviceId);
+// FIX 2: ei key gulo kokhono sync hobe na
+const EXCLUDE=new Set(['lifestyle_device_id','lifestyle_last_sync','lifestyle_last_sync_formatted','lifestyle_firebase_config','lifestyle_ls_update','lifestyle_v18_sync','lifestyle_offline_pending','lifestyle_last_sync']);
 const PREFIX=["lifestyle_","market_survey","travel_"];
-function collect(){ const o={}; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(!k||k==='lifestyle_firebase_config'||k==='lifestyle_last_sync') continue; if(PREFIX.some(p=>k.startsWith(p))){ try{o[k]=localStorage.getItem(k);}catch(e){} } } return o; }
+let lastCloudTs=0, lastPushedHash='', lastAppliedTs=0, isApplying=false;
+function collect(){ const o={}; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(!k||EXCLUDE.has(k)) continue; if(PREFIX.some(p=>k.startsWith(p))){ try{o[k]=localStorage.getItem(k);}catch(e){} } } return o; }
 function hash(s){ let h=0; for(let i=0;i<s.length;i++){ h=((h<<5)-h)+s.charCodeAt(i); h|=0; } return String(h); }
-function setDot(ok){ const d=document.getElementById('lsSyncDot'); if(d) d.style.background=ok?'#7CFC00':'#ff5252'; }
+function dbg(msg){ const el=document.getElementById('lsSyncDebug'); if(el) el.textContent='Device: '+deviceId+' | '+msg; console.log('[SYNC]',msg); }
 async function push(force){
   if(!currentUser||!db||isApplying) return;
-  if(Date.now()<suppressUntil && !force) return;
-  const data=collect(); const h=hash(JSON.stringify(data)); if(h===lastPushedHash && !force) return;
-  try{ const ts=Date.now(); await setDoc(doc(db,'users',currentUser.uid,'sync','main'),{data,updatedAt:ts,fromDevice:deviceId,email:currentUser.email}); lastPushedHash=h; lastCloudTs=ts; localStorage.setItem('lifestyle_last_sync',String(ts)); setDot(true); }catch(e){ setDot(false); }
+  const data=collect(); const h=hash(JSON.stringify(data));
+  if(h===lastPushedHash && !force) return;
+  try{ const ts=Date.now(); await setDoc(doc(db,'users',currentUser.uid,'sync','main'),{data,updatedAt:ts,fromDevice:deviceId,email:currentUser.email}); lastPushedHash=h; lastCloudTs=ts; dbg('Pushed ts='+ts+' hash='+h); }catch(e){ dbg('Push fail: '+e.message); }
 }
-function showToast(){ const el=document.getElementById('lsSyncToast'); if(!el) return; el.style.display='block'; }
-document.getElementById('lsToastRefresh').onclick=()=>{ location.reload(); };
-function applySilent(data,ts){
-  const h=hash(JSON.stringify(data)); if(h===lastSeenHash) return; lastSeenHash=h; lastPushedHash=h;
-  isApplying=true; suppressUntil=Date.now()+15000;
-  try{ Object.keys(data).forEach(k=>{ try{localStorage.setItem(k,data[k]);}catch(e){} }); localStorage.setItem('lifestyle_last_sync',String(ts)); }catch(e){}
+async function pull(){
+  if(!currentUser||!db) return;
+  try{ const snap=await getDoc(doc(db,'users',currentUser.uid,'sync','main')); if(!snap.exists()){ dbg('Cloud khali'); return; } const d=snap.data(); if(!d||!d.data) return; if(d.fromDevice===deviceId){ dbg('Cloud e amar tai ache'); return; } applyAndReload(d.data,d.updatedAt); }catch(e){ dbg('Pull fail: '+e.message); }
+}
+function applyAndReload(data,ts){
+  if(!data) return;
+  const h=hash(JSON.stringify(data));
+  // already applied?
+  if(ts && ts===lastAppliedTs) return;
+  const curH=hash(JSON.stringify(collect()));
+  if(h===curH){ lastAppliedTs=ts||0; return; }
+  // eki ts er jonno 2bar reload noy
+  try{ if(sessionStorage.getItem('__ls_reloaded_ts')===String(ts)) return; sessionStorage.setItem('__ls_reloaded_ts',String(ts)); }catch(e){}
+  lastAppliedTs=ts||0; lastPushedHash=h; // jate reload er por abar purono ta push na hoy
+  isApplying=true;
+  try{ Object.keys(data).forEach(k=>{ if(EXCLUDE.has(k)) return; try{localStorage.setItem(k,data[k]);}catch(e){} }); }catch(e){}
   isApplying=false;
-  // Reload korbo NA - sudhu toast dekhabo, user chaile refresh korbe. Ete screen kapbe na.
-  showToast();
-  // 8 sec por toast lukabe
-  setTimeout(()=>{ const el=document.getElementById('lsSyncToast'); if(el) el.style.display='none'; },8000);
+  const el=document.getElementById('lsSyncToast'); if(el) el.style.display='block';
+  dbg('Applying ts='+ts+' -> reload in 800ms');
+  setTimeout(()=>{ location.reload(); },800);
 }
 function init(){
   const raw=localStorage.getItem('lifestyle_firebase_config'); if(!raw) return;
   try{ const cfg=JSON.parse(raw); if(!app) app=initializeApp(cfg); auth=getAuth(app); db=getFirestore(app);
-    onAuthStateChanged(auth,(u)=>{ currentUser=u; if(u){ setDot(true); document.getElementById('lsSyncInfo').innerHTML='লগইন: <b>'+u.email+'</b><br>এই Gmail দিয়েই বাকি সব ডিভাইসে লগইন করবেন।'; startListener(); push(true); } else setDot(false); });
-  }catch(e){}
+    onAuthStateChanged(auth,(u)=>{ currentUser=u; if(u){ document.getElementById('lsSyncInfo').innerHTML='লগইন: <b>'+u.email+'</b>'; startListener(); // login er sathe sathe ekbar cloud theke tene ano, jate purono data overwrite na kore
+      setTimeout(()=>{ pull(); },1200); } });
+  }catch(e){ dbg('Init fail '+e.message); }
 }
 function startListener(){
   if(!db||!currentUser||unsub) return;
-  unsub=onSnapshot(doc(db,'users',currentUser.uid,'sync','main'),(snap)=>{ if(!snap.exists()) return; const d=snap.data(); if(!d||!d.data) return; if(d.fromDevice===deviceId) return; if(!d.updatedAt||d.updatedAt<=lastCloudTs) return; lastCloudTs=d.updatedAt; applySilent(d.data,d.updatedAt); });
+  unsub=onSnapshot(doc(db,'users',currentUser.uid,'sync','main'),(snap)=>{ if(!snap.exists()) return; const d=snap.data(); if(!d||!d.data) return; if(d.fromDevice===deviceId) return; // nijer pathano ignore
+    if(!d.updatedAt) return;
+    if(d.updatedAt===lastAppliedTs) return;
+    // hash diye check: cloud er data amar current data theke alada holei apply
+    const curH=hash(JSON.stringify(collect())); const cloudH=hash(JSON.stringify(d.data));
+    if(cloudH===curH) return;
+    dbg('Snapshot new ts='+d.updatedAt+' from '+d.fromDevice);
+    applyAndReload(d.data,d.updatedAt);
+  });
 }
+window.lsResetCloud=async()=>{
+  if(!confirm('শুধু টেস্ট আয় মুছে যাবে। ব্যয়, বাজার, ট্রাভেল - সব ঠিক থাকবে। নিশ্চিত?')) return;
+  try{
+    // 1. Local theke sudhu INCOME muchi, EXPENSE rakhi
+    let deleted=0;
+    ['lifestyle_transactions','lifestyle_v3_transactions'].forEach(key=>{
+      try{
+        const raw=localStorage.getItem(key); if(!raw) return;
+        const arr=JSON.parse(raw); if(!Array.isArray(arr)) return;
+        const kept=arr.filter(tx=>{
+          const ty=String(tx.type||tx.addType||tx.kind||tx.category||'').toLowerCase();
+          const isIncome = ty==='income' || ty==='আয়' || tx.isIncome===true || tx.addType==='income';
+          if(isIncome){ deleted++; return false; } return true;
+        });
+        localStorage.setItem(key, JSON.stringify(kept));
+      }catch(e){}
+    });
+    // 2. Cloud e sudhu income-mukto data push kori - cloud delete korbo NA, tahole byoy harabe na
+    if(currentUser && db){
+      // push() ke force korar jonno hash reset
+      lastPushedHash='';
+      await push(true);
+    }
+    alert('হয়ে গেছে! '+deleted+' টা টেস্ট আয় মুছে গেছে। ব্যয় একদম ঠিক আছে। এখন অন্য ডিভাইসে অটো আপডেট হয়ে আয় ০ হয়ে যাবে, ব্যয় আগের মতোই থাকবে।');
+  }catch(e){ alert('হয়নি: '+e.message); }
+};
 window.lsGoogleLogin=async()=>{ if(!auth) return; try{ await signInWithPopup(auth,new GoogleAuthProvider()); document.getElementById('lsSyncModal').style.display='none'; }catch(e){ alert('লগইন হয়নি: '+e.message); } };
-window.lsLogout=async()=>{ try{ if(auth) await signOut(auth); if(unsub){unsub();unsub=null;} currentUser=null; setDot(false); }catch(e){} };
-window.lsManualSync=()=>{ push(true); alert('Sync পাঠিয়ে দেওয়া হয়েছে। অন্য ডিভাইসে নিচে Toast আসবে।'); };
-document.getElementById('lsSyncBtn').onclick=()=>{ document.getElementById('lsSyncModal').style.display='flex'; };
+window.lsLogout=async()=>{ try{ if(auth) await signOut(auth); if(unsub){unsub();unsub=null;} currentUser=null; }catch(e){} };
+window.lsManualSync=async()=>{ await push(true); alert('Push hoye geche. Onno device e 2-3 sec er moddhe update hobe.'); };
+window.lsPullNow=async()=>{ await pull(); };
+document.getElementById('lsSyncBtn').onclick=()=>{ document.getElementById('lsSyncModal').style.display='flex'; dbg('Ready. lastPushed='+lastPushedHash); };
 document.getElementById('lsSyncModal').onclick=(e)=>{ if(e.target.id==='lsSyncModal') e.target.style.display='none'; };
 init();
-// Polling: proti 4 sec e ekbar check - localStorage er prottek set e push noy, tai kapakapi bondho
 setInterval(()=>{ if(currentUser) push(false); },4000);
-// Page hide / close howar age ekbar push
 window.addEventListener('pagehide',()=>{ if(currentUser) push(true); });
 document.addEventListener('visibilitychange',()=>{ if(document.hidden && currentUser) push(true); });
 </script>
-<!-- ===== /Lifestyle V25 ===== -->
+<!-- ===== /Lifestyle V28 ===== -->
 </body>
