@@ -7424,34 +7424,24 @@ ReactDOM.createRoot(document.getElementById('root')).render(h(App));
 </script>
 
 
-<script>
-window.__EMBEDDED_FB_CONFIG = {"apiKey":"AIzaSyDn4xc_Z2etlIEVzuNtHcR-2-3B81D2kaU","authDomain":"lifestyle-app-d4bc0.firebaseapp.com","projectId":"lifestyle-app-d4bc0","storageBucket":"lifestyle-app-d4bc0.firebasestorage.app","messagingSenderId":"494296989508","appId":"1:494296989508:web:aa6b3aa501e3f65fcd2111"};
-try{ if(!localStorage.getItem('lifestyle_firebase_config')) localStorage.setItem('lifestyle_firebase_config', JSON.stringify(window.__EMBEDDED_FB_CONFIG)); }catch(e){}
-</script>
+<script>window.__EMBEDDED_FB_CONFIG = {"apiKey":"AIzaSyDn4xc_Z2etlIEVzuNtHcR-2-3B81D2kaU","authDomain":"lifestyle-app-d4bc0.firebaseapp.com","projectId":"lifestyle-app-d4bc0","storageBucket":"lifestyle-app-d4bc0.firebasestorage.app","messagingSenderId":"494296989508","appId":"1:494296989508:web:aa6b3aa501e3f65fcd2111"}; try{ if(!localStorage.getItem('lifestyle_firebase_config')) localStorage.setItem('lifestyle_firebase_config', JSON.stringify(window.__EMBEDDED_FB_CONFIG)); }catch(e){} </script>
 
-<!-- ===== Lifestyle V22 Gmail Sync (Firebase) ===== -->
+<!-- ===== Lifestyle V25 Stable Sync ===== -->
 <style>
-#lsSyncBtn{position:fixed;top:10px;right:10px;z-index:99999;background:#1a73e8;color:#fff;border:none;padding:9px 14px;border-radius:999px;font-weight:700;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer}
-#lsSyncDot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#ff5252;margin-right:6px;vertical-align:middle}
+#lsSyncBtn{position:fixed;top:8px;right:8px;z-index:99999;background:#1a73e8;color:#fff;border:none;width:86px;height:34px;border-radius:999px;font-weight:700;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer;white-space:nowrap;overflow:hidden;flex-shrink:0}
+#lsSyncDot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#7CFC00;margin-right:4px}
+#lsSyncToast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:100001;background:#222;color:#fff;padding:10px 14px;border-radius:999px;font-size:13px;display:none;box-shadow:0 4px 16px rgba(0,0,0,.3);white-space:nowrap}
 #lsSyncModal{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:16px}
 #lsSyncCard{background:#fff;width:100%;max-width:430px;border-radius:16px;padding:20px;max-height:92vh;overflow:auto;font-family:sans-serif;color:#222}
-#lsSyncCard h3{margin:0 0 6px;font-size:19px}
-#lsSyncCard p{font-size:13.5px;line-height:1.6;color:#444}
-#lsSyncCard input,#lsSyncCard textarea{width:100%;padding:10px;border:1px solid #ddd;border-radius:10px;margin:6px 0;box-sizing:border-box;font-size:13px}
 #lsSyncCard button{width:100%;padding:11px;border:none;border-radius:10px;font-weight:700;cursor:pointer;margin-top:8px;font-size:14px}
-.btnG{background:#1a73e8;color:#fff}.btnOut{background:#eee;color:#222}.btnSave{background:#0f9d58;color:#fff}
+.btnG{background:#1a73e8;color:#fff}.btnOut{background:#eee;color:#222}
 </style>
-<button id="lsSyncBtn"><span id="lsSyncDot"></span><span id="lsSyncTxt">Sync: অফলাইন</span></button>
+<button id="lsSyncBtn"><span id="lsSyncDot"></span><span id="lsSyncTxt">Sync</span></button>
+<div id="lsSyncToast">নতুন তথ্য এসেছে • <b id="lsToastRefresh" style="color:#8ab4ff;text-decoration:underline;cursor:pointer">Refresh করুন</b></div>
 <div id="lsSyncModal"><div id="lsSyncCard">
-<h3>🔄 Gmail Sync</h3>
-<p id="lsSyncInfo">একই Gmail দিয়ে ৩টা মোবাইল + ট্যাবলেট + ল্যাপটপ — সব ডিভাইসে একই তথ্য থাকবে।<br>যে ডিভাইসে তথ্য দিবেন, বাকিগুলোতে অটো আপডেট হবে।</p>
-<div id="lsSyncSetup">
-<p><b>১ম বার শুধু একবার:</b> Config আগে থেকেই বসানো আছে। (নিচে নিয়ম দেওয়া আছে)</p>
-<textarea id="lsFbConfig" rows="4" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","appId":"..."}'></textarea>
-<button class="btnSave" onclick="lsSaveConfig()">Config সেভ করুন</button>
-<p style="font-size:12px">Firebase Console → Project Settings → Your apps → Web app → Config কপি করে এখানে পেস্ট করুন। Config একবার সেভ করলে সব ডিভাইসে একই Config ব্যবহার করবেন।</p>
-</div>
-<button class="btnG" id="lsLoginBtn" onclick="lsGoogleLogin()">📧 একই Gmail দিয়ে লগইন করুন</button>
+<h3 style="margin:0 0 6px">🔄 Gmail Sync</h3>
+<p id="lsSyncInfo" style="font-size:13.5px;line-height:1.6;color:#444">একই Gmail দিয়ে সব ডিভাইসে লগইন করুন।</p>
+<button class="btnG" onclick="lsGoogleLogin()">📧 Gmail দিয়ে লগইন</button>
 <button class="btnOut" onclick="lsManualSync()">↻ এখনই Sync করুন</button>
 <button class="btnOut" onclick="lsLogout()">লগআউট</button>
 <button class="btnOut" onclick="document.getElementById('lsSyncModal').style.display='none'">বন্ধ করুন</button>
@@ -7461,54 +7451,53 @@ try{ if(!localStorage.getItem('lifestyle_firebase_config')) localStorage.setItem
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {getFirestore, doc, setDoc, getDoc, onSnapshot} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-let app=null,auth=null,db=null,currentUser=null,unsub=null,lastCloudTs=0,isApplying=false;
-const SYNC_KEYS_PREFIX=["lifestyle_","market_survey","travel_"];
-function collectData(){
-  const out={}; for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i); if(!k) continue; if(SYNC_KEYS_PREFIX.some(p=>k.startsWith(p)) && k!=="lifestyle_firebase_config"){ try{out[k]=localStorage.getItem(k);}catch(e){} } }
-  return out;
-}
-function _hash(s){ let h=0; for(let i=0;i<s.length;i++){ h=((h<<5)-h)+s.charCodeAt(i); h|=0; } return h; }
-function applyData(data){
-  if(!data) return;
-  // same data hole abar apply korbo na
-  const curHash=_hash(JSON.stringify(collectData()));
-  const newHash=_hash(JSON.stringify(data));
-  if(curHash===newHash) return;
-  isApplying=true;
-  try{ Object.keys(data).forEach(k=>{ try{localStorage.setItem(k,data[k]);}catch(e){} }); }catch(e){}
-  try{ sessionStorage.setItem('ls_just_applied', String(Date.now())); localStorage.setItem('lifestyle_last_sync', String(lastCloudTs||Date.now())); }catch(e){}
-  // Ekbar matro reload, tarpor ar prompt asbe na. Reload er age flag rakha thakbe.
-  setTimeout(()=>{ location.reload(); },400);
-}
-function setUI(txt,ok){ const t=document.getElementById('lsSyncTxt'); const d=document.getElementById('lsSyncDot'); if(t) t.textContent=txt; if(d) d.style.background=ok?'#0f9d58':'#ff5252'; const s=document.getElementById('lsSyncStatus'); if(s) s.textContent=txt; }
-window.lsSaveConfig=()=>{ const v=document.getElementById('lsFbConfig').value.trim(); try{ const j=JSON.parse(v); if(!j.apiKey||!j.projectId) throw new Error('bad'); localStorage.setItem('lifestyle_firebase_config',v); alert('Config সেভ হয়েছে! এখন Gmail দিয়ে লগইন করুন।'); initFirebase(); }catch(e){ alert('Config ঠিক হয়নি। Firebase থেকে পুরো JSON কপি করে পেস্ট করুন।'); } };
-function initFirebase(){
-  const raw=localStorage.getItem('lifestyle_firebase_config'); if(!raw) { setUI('Sync: Config দিন',false); return; }
-  try{ const cfg=JSON.parse(raw); if(!app) app=initializeApp(cfg); auth=getAuth(app); db=getFirestore(app);
-    onAuthStateChanged(auth,(u)=>{ currentUser=u; if(u){ setUI('Sync: '+u.email,true); document.getElementById('lsSyncInfo').innerHTML='লগইন: <b>'+u.email+'</b><br>এই Gmail দিয়েই বাকি সব ডিভাইসে লগইন করবেন।'; startListener(); pushToCloud(); } else { setUI('Sync: লগইন করুন',false); } });
-  }catch(e){ setUI('Sync: Config ভুল',false); }
-}
-let _lastPushedHash='';
-async function pushToCloud(){
+let app=null,auth=null,db=null,currentUser=null,unsub=null;
+let deviceId=localStorage.getItem('lifestyle_device_id')||('dev-'+Math.random().toString(36).slice(2,9)); localStorage.setItem('lifestyle_device_id',deviceId);
+let lastCloudTs=parseInt(localStorage.getItem('lifestyle_last_sync')||'0');
+let lastPushedHash='', lastSeenHash='', suppressUntil=0, isApplying=false;
+const PREFIX=["lifestyle_","market_survey","travel_"];
+function collect(){ const o={}; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(!k||k==='lifestyle_firebase_config'||k==='lifestyle_last_sync') continue; if(PREFIX.some(p=>k.startsWith(p))){ try{o[k]=localStorage.getItem(k);}catch(e){} } } return o; }
+function hash(s){ let h=0; for(let i=0;i<s.length;i++){ h=((h<<5)-h)+s.charCodeAt(i); h|=0; } return String(h); }
+function setDot(ok){ const d=document.getElementById('lsSyncDot'); if(d) d.style.background=ok?'#7CFC00':'#ff5252'; }
+async function push(force){
   if(!currentUser||!db||isApplying) return;
-  try{ const ja=parseInt(sessionStorage.getItem('ls_just_applied')||'0'); if(Date.now()-ja < 10000) return; }catch(e){}
-  const _h=_hash(JSON.stringify(collectData())); if(_h===_lastPushedHash) return; _lastPushedHash=_h;
-  try{ const data=collectData(); const ts=Date.now(); await setDoc(doc(db,'users',currentUser.uid,'sync','main'),{data,updatedAt:ts,email:currentUser.email},{merge:true}); lastCloudTs=ts; localStorage.setItem('lifestyle_last_sync',String(ts)); setUI('Sync: ✅ আপডেট হয়েছে',true); }catch(e){ console.log(e); setUI('Sync: নেট নাই, পরে হবে',false); }
+  if(Date.now()<suppressUntil && !force) return;
+  const data=collect(); const h=hash(JSON.stringify(data)); if(h===lastPushedHash && !force) return;
+  try{ const ts=Date.now(); await setDoc(doc(db,'users',currentUser.uid,'sync','main'),{data,updatedAt:ts,fromDevice:deviceId,email:currentUser.email}); lastPushedHash=h; lastCloudTs=ts; localStorage.setItem('lifestyle_last_sync',String(ts)); setDot(true); }catch(e){ setDot(false); }
+}
+function showToast(){ const el=document.getElementById('lsSyncToast'); if(!el) return; el.style.display='block'; }
+document.getElementById('lsToastRefresh').onclick=()=>{ location.reload(); };
+function applySilent(data,ts){
+  const h=hash(JSON.stringify(data)); if(h===lastSeenHash) return; lastSeenHash=h; lastPushedHash=h;
+  isApplying=true; suppressUntil=Date.now()+15000;
+  try{ Object.keys(data).forEach(k=>{ try{localStorage.setItem(k,data[k]);}catch(e){} }); localStorage.setItem('lifestyle_last_sync',String(ts)); }catch(e){}
+  isApplying=false;
+  // Reload korbo NA - sudhu toast dekhabo, user chaile refresh korbe. Ete screen kapbe na.
+  showToast();
+  // 8 sec por toast lukabe
+  setTimeout(()=>{ const el=document.getElementById('lsSyncToast'); if(el) el.style.display='none'; },8000);
+}
+function init(){
+  const raw=localStorage.getItem('lifestyle_firebase_config'); if(!raw) return;
+  try{ const cfg=JSON.parse(raw); if(!app) app=initializeApp(cfg); auth=getAuth(app); db=getFirestore(app);
+    onAuthStateChanged(auth,(u)=>{ currentUser=u; if(u){ setDot(true); document.getElementById('lsSyncInfo').innerHTML='লগইন: <b>'+u.email+'</b><br>এই Gmail দিয়েই বাকি সব ডিভাইসে লগইন করবেন।'; startListener(); push(true); } else setDot(false); });
+  }catch(e){}
 }
 function startListener(){
   if(!db||!currentUser||unsub) return;
-  unsub=onSnapshot(doc(db,'users',currentUser.uid,'sync','main'),(snap)=>{ if(!snap.exists()) return; const d=snap.data(); if(!d||!d.data) return; if(d.updatedAt && d.updatedAt<=lastCloudTs) return; const localTs=parseInt(localStorage.getItem('lifestyle_last_sync')||'0'); if(d.updatedAt && d.updatedAt > localTs){ lastCloudTs=d.updatedAt; _lastPushedHash=_hash(JSON.stringify(d.data)); applyData(d.data); } });
+  unsub=onSnapshot(doc(db,'users',currentUser.uid,'sync','main'),(snap)=>{ if(!snap.exists()) return; const d=snap.data(); if(!d||!d.data) return; if(d.fromDevice===deviceId) return; if(!d.updatedAt||d.updatedAt<=lastCloudTs) return; lastCloudTs=d.updatedAt; applySilent(d.data,d.updatedAt); });
 }
-window.lsGoogleLogin=async()=>{ if(!auth){ alert('আগে Firebase Config সেভ করুন।'); return; } try{ const p=new GoogleAuthProvider(); await signInWithPopup(auth,p); document.getElementById('lsSyncModal').style.display='none'; }catch(e){ alert('লগইন হয়নি: '+e.message); } };
-window.lsLogout=async()=>{ try{ if(auth) await signOut(auth); if(unsub){unsub();unsub=null;} currentUser=null; setUI('Sync: লগইন করুন',false); }catch(e){} };
-window.lsManualSync=()=>{ pushToCloud(); };
-document.getElementById('lsSyncBtn').onclick=()=>{ document.getElementById('lsSyncModal').style.display='flex'; const c=localStorage.getItem('lifestyle_firebase_config'); if(c) document.getElementById('lsSyncSetup').style.display='none'; };
+window.lsGoogleLogin=async()=>{ if(!auth) return; try{ await signInWithPopup(auth,new GoogleAuthProvider()); document.getElementById('lsSyncModal').style.display='none'; }catch(e){ alert('লগইন হয়নি: '+e.message); } };
+window.lsLogout=async()=>{ try{ if(auth) await signOut(auth); if(unsub){unsub();unsub=null;} currentUser=null; setDot(false); }catch(e){} };
+window.lsManualSync=()=>{ push(true); alert('Sync পাঠিয়ে দেওয়া হয়েছে। অন্য ডিভাইসে নিচে Toast আসবে।'); };
+document.getElementById('lsSyncBtn').onclick=()=>{ document.getElementById('lsSyncModal').style.display='flex'; };
 document.getElementById('lsSyncModal').onclick=(e)=>{ if(e.target.id==='lsSyncModal') e.target.style.display='none'; };
-// Auto sync: localStorage বদলালে 3 সেকেন্ড পর ক্লাউডে পাঠাবে
-let _timer=null; const _origSet=localStorage.setItem.bind(localStorage);
-localStorage.setItem=function(k,v){ _origSet(k,v); if(isApplying) return; if(SYNC_KEYS_PREFIX.some(p=>String(k).startsWith(p))){ clearTimeout(_timer); _timer=setTimeout(()=>{ if(currentUser) pushToCloud(); },3000); } };
-initFirebase();
+init();
+// Polling: proti 4 sec e ekbar check - localStorage er prottek set e push noy, tai kapakapi bondho
+setInterval(()=>{ if(currentUser) push(false); },4000);
+// Page hide / close howar age ekbar push
+window.addEventListener('pagehide',()=>{ if(currentUser) push(true); });
+document.addEventListener('visibilitychange',()=>{ if(document.hidden && currentUser) push(true); });
 </script>
-<!-- ===== /Lifestyle V22 Gmail Sync ===== -->
+<!-- ===== /Lifestyle V25 ===== -->
 </body>
-</html>
