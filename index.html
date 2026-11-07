@@ -7431,7 +7431,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(h(App));
 
 
 
-<!-- ===== Lifestyle V32 No Loss Merge ===== -->
+
+<!-- ===== Lifestyle V33 Delete Fix Tombstone ===== -->
 <style>
 #lsSyncBtn{position:fixed;top:8px;right:8px;z-index:99999;background:#1a73e8;color:#fff;border:none;width:86px;height:34px;border-radius:999px;font-weight:700;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer;white-space:nowrap;display:flex;align-items:center;justify-content:center}
 #lsSyncDot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#7CFC00;margin-right:4px;flex-shrink:0}
@@ -7464,34 +7465,50 @@ let lastPushedHash='', lastAppliedTs=0, isApplying=false, pendingReload=false;
 function collect(){ const o={}; CORE_KEYS.forEach(k=>{ try{ const v=localStorage.getItem(k); if(v!==null) o[k]=v; }catch(e){} }); return o; }
 function hash(s){ let h=0; for(let i=0;i<s.length;i++){ h=((h<<5)-h)+s.charCodeAt(i); h|=0; } return String(h); }
 function dbg(m){ const el=document.getElementById('lsSyncDebug'); if(el) el.textContent='Device: '+deviceId+' | '+m; }
-function itemKey(it){
-  if(!it||typeof it!=='object') return JSON.stringify(it);
-  if(it.id) return 'id:'+it.id;
-  return 'c:'+(it.date||'')+'|'+(it.amount||it.amt||'')+'|'+(it.type||it.addType||it.kind||'')+'|'+(it.category||it.note||it.name||'');
+function itemKey(it){ if(!it||typeof it!=='object') return JSON.stringify(it); if(it.id) return 'id:'+it.id; return 'c:'+(it.date||'')+'|'+(it.amount||it.amt||'')+'|'+(it.type||it.addType||it.kind||'')+'|'+(it.category||it.note||it.name||''); }
+function getIds(arr){ const s=new Set(); (arr||[]).forEach(it=>{ if(it&&it.id) s.add(String(it.id)); }); return s; }
+function parseArr(s){ try{ const a=JSON.parse(s||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+function parseIds(s){ try{ const a=JSON.parse(s||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+// TOMBSTONE: ager snapshot er sathe miliye dekhi konta mucheche. Muche gele tar id ke "mucheche" list e likhe rakhi, jate onno phone ar ferot ante na pare.
+function detectDeletions(local){
+  try{
+    const prevRaw=localStorage.getItem('__ls_prev_snapshot');
+    const prev=prevRaw?JSON.parse(prevRaw):{};
+    const delTx=new Set(parseIds(local['lifestyle_tx_deleted_ids']||'[]').map(String));
+    ['lifestyle_transactions','lifestyle_v3_transactions'].forEach(k=>{
+      const prevArr=parseArr(prev[k]||'[]'); const curArr=parseArr(local[k]||'[]');
+      const curIds=getIds(curArr);
+      prevArr.forEach(it=>{ if(it&&it.id && !curIds.has(String(it.id))) delTx.add(String(it.id)); });
+      // Composite key eo mucheche kina: jodi id na thake, tobuo ager item ekhon nai mane deleted
+      const curKeys=new Set(curArr.map(itemKey));
+      prevArr.forEach(it=>{ if(!it.id && !curKeys.has(itemKey(it))) { /* id-less: composite diye delete track kora jay na, skip */ } });
+    });
+    local['lifestyle_tx_deleted_ids']=JSON.stringify([...delTx]);
+    // Porer barer jonno ekhonkar snapshot save
+    const snap={}; ['lifestyle_transactions','lifestyle_v3_transactions'].forEach(k=>{ snap[k]=local[k]||'[]'; });
+    localStorage.setItem('__ls_prev_snapshot', JSON.stringify(snap));
+    try{ localStorage.setItem('lifestyle_tx_deleted_ids', local['lifestyle_tx_deleted_ids']); }catch(e){}
+  }catch(e){}
+  return local;
 }
-// MERGE - kono tothyo harabe na: local + cloud er UNION. Eki id hole cloud er notun ta, alada id hole duitai thakbe.
 function mergeData(local, cloud){
+  local=detectDeletions(local);
   const out={};
+  // Deleted list age union kori - dujoner mucheche list jog hobe
+  const delUnion=new Set([...parseIds(local['lifestyle_tx_deleted_ids']||'[]').map(String), ...parseIds(cloud['lifestyle_tx_deleted_ids']||'[]').map(String)]);
+  out['lifestyle_tx_deleted_ids']=JSON.stringify([...delUnion]);
   const allKeys=new Set([...Object.keys(local||{}), ...Object.keys(cloud||{})]);
   allKeys.forEach(k=>{
+    if(k==='lifestyle_tx_deleted_ids') return;
     if(LIST_KEYS.has(k)){
-      let la=[], ca=[];
-      try{ la=JSON.parse(local[k]||'[]'); }catch(e){ la=[]; }
-      try{ ca=JSON.parse(cloud[k]||'[]'); }catch(e){ ca=[]; }
-      if(!Array.isArray(la)) la=[]; if(!Array.isArray(ca)) ca=[];
-      const map=new Map();
-      la.forEach(it=>map.set(itemKey(it),it));
-      ca.forEach(it=>{ map.set(itemKey(it),it); }); // cloud er ta pore boslo - edit hole notun ta jitbe, notun entry hole jog hobe
-      // Deleted ids thakle segulo bad
-      const delRaw = local['lifestyle_tx_deleted_ids']||cloud['lifestyle_tx_deleted_ids']||local['lifestyle_bazar_deleted_ids']||'[]';
-      let del=[]; try{ del=JSON.parse(delRaw); }catch(e){}
+      const la=parseArr(local[k]); const ca=parseArr(cloud[k]);
+      const map=new Map(); la.forEach(it=>map.set(itemKey(it),it)); ca.forEach(it=>map.set(itemKey(it),it));
       let arr=[...map.values()];
-      if(Array.isArray(del)&&del.length){ arr=arr.filter(it=>!del.includes(it.id)); }
+      // Tombstone filter: mucheche id gulo kono vabei ferot asbe na
+      if(delUnion.size){ arr=arr.filter(it=>!(it&&it.id && delUnion.has(String(it.id)))); }
       out[k]=JSON.stringify(arr);
     } else {
-      // Single value / object: cloud thakle cloud, na thakle local. Kintu local e notun lekha thakle seta merge e pore push e jabe.
-      out[k]= (cloud[k]!==undefined && cloud[k]!==null && cloud[k]!=='') ? cloud[k] : (local[k]||'');
-      // Jodi local ta cloud theke alada ar local ta notun hoy, tahole local kei rakhi - pore push e union hobe
+      out[k]=(cloud[k]!==undefined && cloud[k]!==null && cloud[k]!=='') ? cloud[k] : (local[k]||'');
       if(local[k] && cloud[k] && local[k]!==cloud[k] && k.includes('user_')) out[k]=local[k];
     }
   });
@@ -7511,18 +7528,16 @@ function patchHomeNumbers(){
     const dot=document.getElementById('lsSyncDot'); if(dot){ dot.style.transform='scale(1.6)'; setTimeout(()=>dot.style.transform='scale(1)',300); }
   }catch(e){}
 }
-// PUSH: age cloud theke tene merge kore tarpor push - tahole onno device er lekha muchbe na
 async function push(force){
   if(!currentUser||!db||isApplying) return;
-  const local=collect(); const h=hash(JSON.stringify(local));
+  const local=detectDeletions(collect()); const h=hash(JSON.stringify(local));
   if(h===lastPushedHash && !force) return;
   try{
     let merged=local;
     try{ const snap=await getDoc(doc(db,'users',currentUser.uid,'sync','main')); if(snap.exists() && snap.data() && snap.data().data){ merged=mergeData(local, snap.data().data); } }catch(e){}
     const mh=hash(JSON.stringify(merged));
-    // Merged ta local e o likhe rakhi, jate local e o sob thake
     isApplying=true; Object.keys(merged).forEach(k=>{ try{localStorage.setItem(k,merged[k]);}catch(e){} }); isApplying=false;
-    const ts=Date.now(); await setDoc(doc(db,'users',currentUser.uid,'sync','main'),{data:merged,updatedAt:ts,fromDevice:deviceId,email:currentUser.email}); lastPushedHash=mh; patchHomeNumbers();
+    const ts=Date.now(); await setDoc(doc(db,'users',currentUser.uid,'sync','main'),{data:merged,[STRIPPED] lastPushedHash=mh; patchHomeNumbers();
   }catch(e){ dbg('Push fail '+e.message); }
 }
 async function pull(){
@@ -7532,14 +7547,11 @@ async function pull(){
 function applyMerge(cloudData,ts){
   if(!cloudData||!ts) return; if(ts===lastAppliedTs) return;
   try{ if(sessionStorage.getItem('__ls_applied_ts')===String(ts)) return; sessionStorage.setItem('__ls_applied_ts',String(ts)); }catch(e){}
-  const local=collect();
-  const merged=mergeData(local, cloudData);
+  const local=collect(); const merged=mergeData(local, cloudData);
   const mh=hash(JSON.stringify(merged)); const curH=hash(JSON.stringify(local));
   if(mh===curH){ lastAppliedTs=ts; return; }
   lastAppliedTs=ts; lastPushedHash=mh; pendingReload=true;
-  isApplying=true;
-  try{ Object.keys(merged).forEach(k=>{ try{localStorage.setItem(k,merged[k]);}catch(e){} }); }catch(e){}
-  isApplying=false;
+  isApplying=true; try{ Object.keys(merged).forEach(k=>{ try{localStorage.setItem(k,merged[k]);}catch(e){} }); }catch(e){} isApplying=false;
   patchHomeNumbers();
 }
 function init(){
@@ -7574,5 +7586,5 @@ setInterval(()=>{ if(currentUser) push(false); },6000);
 window.addEventListener('pagehide',()=>{ if(currentUser) push(true); });
 document.addEventListener('visibilitychange',()=>{ if(document.hidden && currentUser) push(true); });
 </script>
-<!-- ===== /Lifestyle V32 ===== -->
+<!-- ===== /Lifestyle V33 ===== -->
 </body>
