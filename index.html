@@ -7432,7 +7432,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(h(App));
 
 
 
-<!-- ===== Lifestyle V33 Delete Fix Tombstone ===== -->
+<!-- ===== Lifestyle V34 History Live Delete ===== -->
 <style>
 #lsSyncBtn{position:fixed;top:8px;right:8px;z-index:99999;background:#1a73e8;color:#fff;border:none;width:86px;height:34px;border-radius:999px;font-weight:700;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer;white-space:nowrap;display:flex;align-items:center;justify-content:center}
 #lsSyncDot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#7CFC00;margin-right:4px;flex-shrink:0}
@@ -7514,7 +7514,31 @@ function mergeData(local, cloud){
   });
   return out;
 }
+
+function patchHistoryDelete(deletedItems){
+  try{
+    deletedItems.forEach(it=>{
+      const name=String(it.category||it.note||it.name||it.title||'').trim();
+      const amt=String(it.amount||it.amt||'');
+      if(!name && !amt) return;
+      const all=[...document.querySelectorAll('div, li')];
+      // Card khuji jekhane nam + amount duitai ache
+      for(const el of all){
+        const txt=el.textContent||'';
+        if(txt.includes(name) && txt.includes(amt) && el.querySelector('button')){
+          // Sobcheye choto card ta khuji - parent jekhane Edit/Delete button ache
+          let card=el; let up=0;
+          while(card.parentElement && up<4){ card=card.parentElement; up++; if(card.textContent.includes('মুছুন')||card.textContent.includes('সম্পাদনা')) break; }
+          if(card && (card.textContent.includes('মুছুন'))){ card.style.transition='opacity .25s'; card.style.opacity='0'; setTimeout(()=>card.remove(),260); break; }
+        }
+      }
+    });
+    // Filter text: "3 records" -> "2 records"
+    document.querySelectorAll('*').forEach(e=>{ if(e.children.length===0 && /records/.test(e.textContent)){ const m=e.textContent.match(/(\d+)\s*records/); if(m){ const n=parseInt(m[1])-deletedItems.length; if(n>=0) e.textContent=e.textContent.replace(/(\d+)\s*records/, n+' records'); } } });
+  }catch(e){}
+}
 function patchHomeNumbers(){
+
   try{
     const raw=localStorage.getItem('lifestyle_transactions')||localStorage.getItem('lifestyle_v3_transactions')||'[]';
     const arr=JSON.parse(raw); if(!Array.isArray(arr)) return;
@@ -7550,6 +7574,9 @@ function applyMerge(cloudData,ts){
   const local=collect(); const merged=mergeData(local, cloudData);
   const mh=hash(JSON.stringify(merged)); const curH=hash(JSON.stringify(local));
   if(mh===curH){ lastAppliedTs=ts; return; }
+  // History theke mucheche card gulo ber kori - merge er age vs pore tulona kore
+  let deletedItems=[];
+  try{ const before=parseArr(local['lifestyle_transactions']||local['lifestyle_v3_transactions']||'[]'); const after=parseArr(merged['lifestyle_transactions']||merged['lifestyle_v3_transactions']||'[]'); const afterIds=new Set(after.map(x=>String(x.id))); deletedItems=before.filter(x=>x&&x.id&&!afterIds.has(String(x.id))); }catch(e){}
   lastAppliedTs=ts; lastPushedHash=mh; pendingReload=true;
   isApplying=true; try{ Object.keys(merged).forEach(k=>{ try{localStorage.setItem(k,merged[k]);}catch(e){} }); }catch(e){} isApplying=false;
   patchHomeNumbers();
@@ -7582,9 +7609,10 @@ document.addEventListener('click',(e)=>{
 document.getElementById('lsSyncBtn').onclick=()=>{ document.getElementById('lsSyncModal').style.display='flex'; };
 document.getElementById('lsSyncModal').onclick=(e)=>{ if(e.target.id==='lsSyncModal') e.target.style.display='none'; };
 init();
-setInterval(()=>{ if(currentUser) push(false); },6000);
+setInterval(()=>{ if(currentUser) push(false); },2000);
+let __lsLastLocalHash=hash(JSON.stringify(collect())); setInterval(()=>{ try{ const h=hash(JSON.stringify(collect())); if(h!==__lsLastLocalHash){ __lsLastLocalHash=h; if(currentUser) push(false); } }catch(e){} },1000);
 window.addEventListener('pagehide',()=>{ if(currentUser) push(true); });
 document.addEventListener('visibilitychange',()=>{ if(document.hidden && currentUser) push(true); });
 </script>
-<!-- ===== /Lifestyle V33 ===== -->
+<!-- ===== /Lifestyle V34 ===== -->
 </body>
