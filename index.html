@@ -5301,6 +5301,7 @@ function App(){
   // V19 FINAL - STABLE SYNC - NO MORE INTERMITTENT ISSUES
   function syncToCloud(user){
     if(!user || !user.uid) return;
+    if(isSyncingFromCloudRef.current) return; // FIX: cloud theke asche, ekhon push korle purono data fire asbe
     try{
       const db = firebase.firestore();
       const now = new Date().toISOString();
@@ -5311,6 +5312,9 @@ function App(){
       // FIX V18.2 Step1: State is truth, no localStorage length hack
       let latestBazar = Array.isArray(bazarList) ? bazarList : [];
       let latestTx = Array.isArray(transactions) ? transactions : [];
+      try{ const _lsTx=JSON.parse(localStorage.getItem('lifestyle_transactions')||'null'); if(Array.isArray(_lsTx) && _lsTx.length>=latestTx.length) latestTx=_lsTx; }catch(e){}
+      try{ const _lsBz=JSON.parse(localStorage.getItem('lifestyle_bazar_list')||'null'); if(Array.isArray(_lsBz) && _lsBz.length>=latestBazar.length) latestBazar=_lsBz; }catch(e){}
+      try{ const _lsDel=JSON.parse(localStorage.getItem('lifestyle_tx_deleted_ids')||'null'); if(Array.isArray(_lsDel)) latestTxDel=_lsDel; }catch(e){}
       let latestDailyTasks = Array.isArray(dailyTasks) ? dailyTasks : [];
       let latestDeletedIds = Array.isArray(bazarDeletedIds) ? bazarDeletedIds : [];
       try{
@@ -5483,21 +5487,21 @@ function App(){
             try{
               var delPeople = JSON.parse(localStorage.getItem('lifestyle_people_deleted_ids')||'[]');
               var filteredGiven = (d.peopleGiven||[]).filter(function(p){ return !delPeople.includes(p.id); });
-              setPeopleGiven(filteredGiven);
+              setPeopleGiven(prev => { try{ return mergePeople(prev||[], filteredGiven); }catch(e){ return filteredGiven; } });
             }catch(e){ setPeopleGiven(d.peopleGiven || []); }
           }
           if(typeof d.peopleTaken !== 'undefined'){
             try{
               var delPeople2 = JSON.parse(localStorage.getItem('lifestyle_people_deleted_ids')||'[]');
               var filteredTaken = (d.peopleTaken||[]).filter(function(p){ return !delPeople2.includes(p.id); });
-              setPeopleTaken(filteredTaken);
+              setPeopleTaken(prev => { try{ return mergePeople(prev||[], filteredTaken); }catch(e){ return filteredTaken; } });
             }catch(e){ setPeopleTaken(d.peopleTaken || []); }
           }
           if(typeof d.bankLoans !== 'undefined'){
             try{
               var delBank = JSON.parse(localStorage.getItem('lifestyle_bankloan_deleted_ids')||'[]');
               var filteredBank = (d.bankLoans||[]).filter(function(b){ return !delBank.includes(b.id); });
-              setBankLoans(filteredBank);
+              setBankLoans(prev => { try{ return mergeById(prev||[], filteredBank); }catch(e){ return filteredBank; } });
             }catch(e){ setBankLoans(d.bankLoans || []); }
           }
           if(typeof d.bazarList !== 'undefined'){
@@ -7422,198 +7426,4 @@ async function handleMarketSurveyPdf(mode, formData){
 ReactDOM.createRoot(document.getElementById('root')).render(h(App));
 
 </script>
-
-
-<script>window.__EMBEDDED_FB_CONFIG = {"apiKey":"AIzaSyDn4xc_Z2etlIEVzuNtHcR-2-3B81D2kaU","authDomain":"lifestyle-app-d4bc0.firebaseapp.com","projectId":"lifestyle-app-d4bc0","storageBucket":"lifestyle-app-d4bc0.firebasestorage.app","messagingSenderId":"494296989508","appId":"1:494296989508:web:aa6b3aa501e3f65fcd2111"}; try{ if(!localStorage.getItem('lifestyle_firebase_config')) localStorage.setItem('lifestyle_firebase_config', JSON.stringify(window.__EMBEDDED_FB_CONFIG)); }catch(e){} </script>
-
-
-
-
-
-
-
-<!-- ===== Lifestyle FINAL Stable ===== -->
-<style>
-#lsSyncBtn{position:fixed;display:none !important;visibility:hidden !important;top:8px;right:8px;z-index:99999;background:#1a73e8;color:#fff;border:none;width:86px;height:34px;border-radius:999px;font-weight:700;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer;white-space:nowrap;display:flex;align-items:center;justify-content:center}
-#lsSyncDot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#7CFC00;margin-right:4px;flex-shrink:0}
-#lsSyncModal{position:fixed;display:none !important;inset:0;z-index:100000;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:16px}
-#lsSyncCard{background:#fff;width:100%;max-width:430px;border-radius:16px;padding:20px;max-height:92vh;overflow:auto;font-family:sans-serif;color:#222}
-#lsSyncCard button{width:100%;padding:11px;border:none;border-radius:10px;font-weight:700;cursor:pointer;margin-top:8px;font-size:14px}
-.btnG{background:#1a73e8;color:#fff}.btnOut{background:#eee;color:#222}
-</style>
-<button id="lsSyncBtn"><span id="lsSyncDot"></span><span id="lsSyncTxt">Sync</span></button>
-<div id="lsSyncModal"><div id="lsSyncCard">
-<h3 style="margin:0 0 6px">🔄 Gmail Sync</h3>
-<p id="lsSyncInfo" style="font-size:13.5px;line-height:1.6;color:#444">একই Gmail দিয়ে সব ডিভাইসে লগইন করুন।</p>
-<p id="lsSyncDebug" style="font-size:11px;color:#888;word-break:break-all"></p>
-<button class="btnG" onclick="lsGoogleLogin()">📧 Gmail দিয়ে লগইন</button>
-<button class="btnOut" onclick="lsManualSync()">↻ এখনই Sync করুন</button>
-<button class="btnOut" onclick="lsPullNow()">⬇ অন্য ডিভাইসের তথ্য টেনে আনুন</button>
-<button class="btnOut" style="background:#ff5252;color:#fff" onclick="lsResetCloud()">🗑️ শুধু টেস্ট আয় মুছুন (ব্যয় থাকবে)</button>
-<button class="btnOut" onclick="lsLogout()">লগআউট</button>
-<button class="btnOut" onclick="document.getElementById('lsSyncModal').style.display='none'">বন্ধ করুন</button>
-</div></div>
-<script type="module">
-import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {getFirestore, doc, setDoc, getDoc, onSnapshot} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-let app=null,auth=null,db=null,currentUser=null,unsub=null;
-try{ if(!localStorage.getItem('__ls_prev_snapshot')){ const _s={}; ['lifestyle_transactions','lifestyle_v3_transactions'].forEach(k=>{ _s[k]=localStorage.getItem(k)||'[]'; }); localStorage.setItem('__ls_prev_snapshot', JSON.stringify(_s)); } }catch(e){}
-let deviceId=sessionStorage.getItem('__ls_device_id')||('dev-'+Math.random().toString(36).slice(2,9)); sessionStorage.setItem('__ls_device_id',deviceId);
-const CORE_KEYS=['lifestyle_transactions','lifestyle_v3_transactions','lifestyle_v3_bankLoans','lifestyle_v3_loansGiven','lifestyle_v3_loansTaken','lifestyle_bank_loans','lifestyle_bazar_list','lifestyle_travel_list','lifestyle_people_given','lifestyle_people_taken','lifestyle_people_trash','lifestyle_daily_tasks','market_surveys_list','market_survey_form','lifestyle_user_name','lifestyle_user_mobile','lifestyle_user_address','lifestyle_user_designation','lifestyle_profile_photo','lifestyle_expense_categories_v18','lifestyle_bankloan_deleted_ids','lifestyle_bazar_deleted_ids','lifestyle_people_deleted_ids','lifestyle_tx_deleted_ids','travel_others_note'];
-const LIST_KEYS=new Set(['lifestyle_transactions','lifestyle_v3_transactions','lifestyle_bank_loans','lifestyle_bazar_list','lifestyle_travel_list','lifestyle_daily_tasks','market_surveys_list']);
-let lastPushedHash='', lastAppliedTs=0, isApplying=false, pendingReload=false;
-function collect(){ const o={}; CORE_KEYS.forEach(k=>{ try{ const v=localStorage.getItem(k); if(v!==null) o[k]=v; }catch(e){} }); return o; }
-function hash(s){ let h=0; for(let i=0;i<s.length;i++){ h=((h<<5)-h)+s.charCodeAt(i); h|=0; } return String(h); }
-function dbg(m){ const el=document.getElementById('lsSyncDebug'); if(el) el.textContent='Device: '+deviceId+' | '+m; }
-function itemKey(it){ if(!it||typeof it!=='object') return JSON.stringify(it); if(it.id) return 'id:'+it.id; return 'c:'+(it.date||'')+'|'+(it.amount||it.amt||'')+'|'+(it.type||it.addType||it.kind||'')+'|'+(it.category||it.note||it.name||''); }
-function getIds(arr){ const s=new Set(); (arr||[]).forEach(it=>{ if(it&&it.id) s.add(String(it.id)); }); return s; }
-function parseArr(s){ try{ const a=JSON.parse(s||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
-function parseIds(s){ try{ const a=JSON.parse(s||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
-// TOMBSTONE: ager snapshot er sathe miliye dekhi konta mucheche. Muche gele tar id ke "mucheche" list e likhe rakhi, jate onno phone ar ferot ante na pare.
-function detectDeletions(local){
-  try{
-    const prevRaw=localStorage.getItem('__ls_prev_snapshot');
-    const prev=prevRaw?JSON.parse(prevRaw):{};
-    const delTx=new Set(parseIds(local['lifestyle_tx_deleted_ids']||'[]').map(String));
-    ['lifestyle_transactions','lifestyle_v3_transactions'].forEach(k=>{
-      const prevArr=parseArr(prev[k]||'[]'); const curArr=parseArr(local[k]||'[]');
-      const curIds=getIds(curArr);
-      prevArr.forEach(it=>{ if(it&&it.id && !curIds.has(String(it.id))) delTx.add(String(it.id)); });
-      // Composite key eo mucheche kina: jodi id na thake, tobuo ager item ekhon nai mane deleted
-      const curKeys=new Set(curArr.map(itemKey));
-      prevArr.forEach(it=>{ if(!it.id && !curKeys.has(itemKey(it))) { /* id-less: composite diye delete track kora jay na, skip */ } });
-    });
-    local['lifestyle_tx_deleted_ids']=JSON.stringify([...delTx]);
-    // Porer barer jonno ekhonkar snapshot save
-    const snap={}; ['lifestyle_transactions','lifestyle_v3_transactions'].forEach(k=>{ snap[k]=local[k]||'[]'; });
-    localStorage.setItem('__ls_prev_snapshot', JSON.stringify(snap));
-    try{ localStorage.setItem('lifestyle_tx_deleted_ids', local['lifestyle_tx_deleted_ids']); }catch(e){}
-  }catch(e){}
-  return local;
-}
-function mergeData(local, cloud){
-  local=detectDeletions(local);
-  const out={};
-  // Deleted list age union kori - dujoner mucheche list jog hobe
-  const delUnion=new Set([...parseIds(local['lifestyle_tx_deleted_ids']||'[]').map(String), ...parseIds(cloud['lifestyle_tx_deleted_ids']||'[]').map(String)]);
-  out['lifestyle_tx_deleted_ids']=JSON.stringify([...delUnion]);
-  const allKeys=new Set([...Object.keys(local||{}), ...Object.keys(cloud||{})]);
-  allKeys.forEach(k=>{
-    if(k==='lifestyle_tx_deleted_ids') return;
-    if(LIST_KEYS.has(k)){
-      const la=parseArr(local[k]); const ca=parseArr(cloud[k]);
-      const map=new Map(); la.forEach(it=>map.set(itemKey(it),it)); ca.forEach(it=>map.set(itemKey(it),it));
-      let arr=[...map.values()];
-      // Tombstone filter: mucheche id gulo kono vabei ferot asbe na
-      if(delUnion.size){ arr=arr.filter(it=>!(it&&it.id && delUnion.has(String(it.id)))); }
-      out[k]=JSON.stringify(arr);
-    } else {
-      out[k]=(cloud[k]!==undefined && cloud[k]!==null && cloud[k]!=='') ? cloud[k] : (local[k]||'');
-      if(local[k] && cloud[k] && local[k]!==cloud[k] && k.includes('user_')) out[k]=local[k];
-    }
-  });
-  return out;
-}
-
-function patchHistoryDelete(deletedItems){
-  try{
-    deletedItems.forEach(it=>{
-      const name=String(it.category||it.note||it.name||it.title||'').trim();
-      const amt=String(it.amount||it.amt||'');
-      if(!name && !amt) return;
-      const all=[...document.querySelectorAll('div, li')];
-      // Card khuji jekhane nam + amount duitai ache
-      for(const el of all){
-        const txt=el.textContent||'';
-        if(txt.includes(name) && txt.includes(amt) && el.querySelector('button')){
-          // Sobcheye choto card ta khuji - parent jekhane Edit/Delete button ache
-          let card=el; let up=0;
-          while(card.parentElement && up<4){ card=card.parentElement; up++; if(card.textContent.includes('মুছুন')||card.textContent.includes('সম্পাদনা')) break; }
-          if(card && (card.textContent.includes('মুছুন'))){ card.style.transition='opacity .25s'; card.style.opacity='0'; setTimeout(()=>card.remove(),260); break; }
-        }
-      }
-    });
-    // Filter text: "3 records" -> "2 records"
-    document.querySelectorAll('*').forEach(e=>{ if(e.children.length===0 && /records/.test(e.textContent)){ const m=e.textContent.match(/(\d+)\s*records/); if(m){ const n=parseInt(m[1])-deletedItems.length; if(n>=0) e.textContent=e.textContent.replace(/(\d+)\s*records/, n+' records'); } } });
-  }catch(e){}
-}
-function patchHomeNumbers(){
-
-  try{
-    const raw=localStorage.getItem('lifestyle_transactions')||localStorage.getItem('lifestyle_v3_transactions')||'[]';
-    const arr=JSON.parse(raw); if(!Array.isArray(arr)) return;
-    const now=new Date(), ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'), today=now.toISOString().slice(0,10);
-    let incM=0, expT=0, expM=0;
-    arr.forEach(tx=>{ const amt=parseFloat(tx.amount||tx.amt||0)||0; const ty=String(tx.type||tx.addType||tx.kind||'').toLowerCase(); const d=String(tx.date||tx.createdAt||'').slice(0,10); const isInc=ty==='income'||ty==='আয়'||tx.isIncome===true; if(isInc){ if(d.startsWith(ym)) incM+=amt; } else { if(d===today) expT+=amt; if(d.startsWith(ym)) expM+=amt; } });
-    const fmt=n=>'৳ '+n.toLocaleString('en-IN'); const vals=[fmt(incM),fmt(expT),fmt(expM)];
-    const els=[...document.querySelectorAll('*')].filter(e=>e.children.length===0 && e.textContent.includes('৳'));
-    const nums=els.filter(e=>/^\s*৳\s*[\d,]+/.test(e.textContent));
-    if(nums.length>=3){ nums[0].textContent=vals[0]; nums[1].textContent=vals[1]; nums[2].textContent=vals[2]; }
-    const dot=document.getElementById('lsSyncDot'); if(dot){ dot.style.transform='scale(1.6)'; setTimeout(()=>dot.style.transform='scale(1)',300); }
-  }catch(e){}
-}
-async function push(force){
-  if(!currentUser||!db||isApplying) return;
-  const local=detectDeletions(collect()); const h=hash(JSON.stringify(local));
-  if(h===lastPushedHash && !force) return;
-  try{
-    let merged=local;
-    try{ const snap=await getDoc(doc(db,'users',currentUser.uid,'sync','main')); if(snap.exists() && snap.data() && snap.data().data){ merged=mergeData(local, snap.data().data); } }catch(e){}
-    const mh=hash(JSON.stringify(merged));
-    isApplying=true; Object.keys(merged).forEach(k=>{ try{localStorage.setItem(k,merged[k]);}catch(e){} }); isApplying=false;
-    const ts=Date.now(); await setDoc(doc(db,'users',currentUser.uid,'sync','main'),{data:merged,[STRIPPED] lastPushedHash=mh; patchHomeNumbers();
-  }catch(e){ dbg('Push fail '+e.message); }
-}
-async function pull(){
-  if(!currentUser||!db) return;
-  try{ const snap=await getDoc(doc(db,'users',currentUser.uid,'sync','main')); if(!snap.exists()) return; const d=snap.data(); if(!d||!d.data) return; if(d.fromDevice===deviceId) return; applyMerge(d.data,d.updatedAt); }catch(e){}
-}
-function applyMerge(cloudData,ts){
-  if(!cloudData||!ts) return; if(ts===lastAppliedTs) return;
-  try{ if(sessionStorage.getItem('__ls_applied_ts')===String(ts)) return; sessionStorage.setItem('__ls_applied_ts',String(ts)); }catch(e){}
-  const local=collect(); const merged=mergeData(local, cloudData);
-  const mh=hash(JSON.stringify(merged)); const curH=hash(JSON.stringify(local));
-  if(mh===curH){ lastAppliedTs=ts; return; }
-  // History theke mucheche card gulo ber kori - merge er age vs pore tulona kore
-  let deletedItems=[];
-  try{ const before=parseArr(local['lifestyle_transactions']||local['lifestyle_v3_transactions']||'[]'); const after=parseArr(merged['lifestyle_transactions']||merged['lifestyle_v3_transactions']||'[]'); const afterIds=new Set(after.map(x=>String(x.id))); deletedItems=before.filter(x=>x&&x.id&&!afterIds.has(String(x.id))); }catch(e){}
-  lastAppliedTs=ts; lastPushedHash=mh; pendingReload=true;
-  isApplying=true; try{ Object.keys(merged).forEach(k=>{ try{localStorage.setItem(k,merged[k]);}catch(e){} }); }catch(e){} isApplying=false;
-  patchHomeNumbers();
-}
-function init(){
-  const raw=localStorage.getItem('lifestyle_firebase_config'); if(!raw) return;
-  try{ const cfg=JSON.parse(raw); if(!app) app=initializeApp(cfg); auth=getAuth(app); db=getFirestore(app);
-    onAuthStateChanged(auth,(u)=>{ currentUser=u; if(u){ document.getElementById('lsSyncInfo').innerHTML='লগইন: <b>'+u.email+'</b>'; startListener(); setTimeout(()=>{ pull(); },1200); } });
-  }catch(e){}
-}
-function startListener(){
-  if(!db||!currentUser||unsub) return;
-  unsub=onSnapshot(doc(db,'users',currentUser.uid,'sync','main'),(snap)=>{ if(!snap.exists()) return; const d=snap.data(); if(!d||!d.data) return; if(d.fromDevice===deviceId) return; if(!d.updatedAt||d.updatedAt===lastAppliedTs) return; applyMerge(d.data,d.updatedAt); });
-}
-window.lsGoogleLogin=async()=>{ if(!auth) return; try{ await signInWithPopup(auth,new GoogleAuthProvider()); document.getElementById('lsSyncModal').style.display='none'; }catch(e){ alert('লগইন হয়নি: '+e.message); } };
-window.lsLogout=async()=>{ try{ if(auth) await signOut(auth); if(unsub){unsub();unsub=null;} currentUser=null; }catch(e){} };
-window.lsManualSync=async()=>{ await push(true); };
-window.lsPullNow=async()=>{ await pull(); };
-window.lsResetCloud=async()=>{
-  if(!confirm('শুধু টেস্ট আয় মুছে যাবে। ব্যয়, বাজার, ট্রাভেল সব ঠিক থাকবে। নিশ্চিত?')) return;
-  try{ let deleted=0; ['lifestyle_transactions','lifestyle_v3_transactions'].forEach(key=>{ try{ const raw=localStorage.getItem(key); if(!raw) return; const arr=JSON.parse(raw); if(!Array.isArray(arr)) return; const kept=arr.filter(tx=>{ const ty=String(tx.type||tx.addType||tx.kind||'').toLowerCase(); const isIncome=ty==='income'||ty==='আয়'||tx.isIncome===true||tx.addType==='income'; if(isIncome){deleted++; return false;} return true; }); localStorage.setItem(key,JSON.stringify(kept)); }catch(e){} });
-    lastPushedHash=''; await push(true); patchHomeNumbers(); alert('হয়ে গেছে! '+deleted+' টা টেস্ট আয় মুছেছে। ব্যয় ঠিক আছে।'); }catch(e){ alert('হয়নি: '+e.message); }
-};
-document.addEventListener('click',(e)=>{
-  if(!pendingReload) return;
-  if(e.target.closest('#lsSyncModal')||e.target.closest('#lsSyncBtn')) return;
-  const btn=e.target.closest('button, a, [onclick]'); if(!btn) return;
-  pendingReload=false; setTimeout(()=>{ location.reload(); },80);
-},true);
-document.getElementById('lsSyncBtn').onclick=()=>{ document.getElementById('lsSyncModal').style.display='flex'; };
-document.getElementById('lsSyncModal').onclick=(e)=>{ if(e.target.id==='lsSyncModal') e.target.style.display='none'; };
-init();
-setInterval(()=>{ if(currentUser) push(false); },2000);
-let __lsLastLocalHash=hash(JSON.stringify(collect())); setInterval(()=>{ try{ const h=hash(JSON.stringify(collect())); if(h!==__lsLastLocalHash){ __lsLastLocalHash=h; if(currentUser) push(false); } }catch(e){} },1000);
-window.addEventListener('pagehide',()=>{ if(currentUser) push(true); });
-document.addEventListener('visibilitychange',()=>{ if(document.hidden && currentUser) push(true); });
-</script>
-<!-- ===== /Lifestyle FINAL ===== -->
-</body>
+</body></html>
