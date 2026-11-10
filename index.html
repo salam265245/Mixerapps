@@ -1211,12 +1211,45 @@ function loanEntrySaveBtn(){
 function sigKey(){ try{ const n = ((typeof loadProfile === 'function' ? loadProfile() : {}) || {}).name || ''; return 'lifestyle_signature_' + n; }catch(e){ return 'lifestyle_signature_'; } }
 function getSignatureData(){ try{ const raw = localStorage.getItem(sigKey()); if(!raw) return null; const o = JSON.parse(raw); if(o && o.img) return o; }catch(e){} return null; }
 let _sigImg = null, _sigImgSrc = '';
-function preloadSignatureImg(){ const d = getSignatureData(); if(!d){ _sigImg = null; _sigImgSrc = ''; return; } if(_sigImgSrc === d.img && _sigImg) return; _sigImgSrc = d.img; _sigImg = new Image(); _sigImg.src = d.img; }
+function preloadSignatureImg(){ const d = getSignatureData(); if(!d){ _sigImg = null; _sigImgSrc = ''; return; } if(_sigImgSrc === d.img && _sigImg) return; _sigImgSrc = d.img; _sigImg = new Image(); _sigImg.onload = function(){ autoTrimStoredSignature(d.img); }; _sigImg.src = d.img; }
+function trimSignatureDataURL(dataURL, cb){
+  const im = new Image();
+  im.onload = function(){
+    try{
+      const cv = document.createElement('canvas'); cv.width = im.naturalWidth; cv.height = im.naturalHeight;
+      const g = cv.getContext('2d'); g.drawImage(im, 0, 0);
+      const px = g.getImageData(0, 0, cv.width, cv.height).data;
+      let x0 = cv.width, y0 = cv.height, x1 = -1, y1 = -1;
+      for(let y = 0; y < cv.height; y++){ for(let x = 0; x < cv.width; x++){ const i = (y * cv.width + x) * 4; if(px[i] < 240 || px[i+1] < 240 || px[i+2] < 240){ if(x < x0) x0 = x; if(x > x1) x1 = x; if(y < y0) y0 = y; if(y > y1) y1 = y; } } }
+      if(x1 < 0){ cb(dataURL); return; }
+      const pad = 6;
+      x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad); x1 = Math.min(cv.width - 1, x1 + pad); y1 = Math.min(cv.height - 1, y1 + pad);
+      const w = x1 - x0 + 1, hh = y1 - y0 + 1;
+      if(w < 10 || hh < 6 || (w >= cv.width * 0.98 && hh >= cv.height * 0.98)){ cb(dataURL); return; }
+      const cv2 = document.createElement('canvas'); cv2.width = w; cv2.height = hh;
+      const g2 = cv2.getContext('2d'); g2.fillStyle = '#ffffff'; g2.fillRect(0, 0, w, hh); g2.drawImage(cv, x0, y0, w, hh, 0, 0, w, hh);
+      cb(cv2.toDataURL('image/jpeg', 0.9));
+    }catch(e){ cb(dataURL); }
+  };
+  im.onerror = function(){ cb(dataURL); };
+  im.src = dataURL;
+}
+let _sigTrimDoneFor = '';
+function autoTrimStoredSignature(dataURL){
+  if(!dataURL || _sigTrimDoneFor === dataURL) return; _sigTrimDoneFor = dataURL;
+  trimSignatureDataURL(dataURL, function(trimmed){
+    if(trimmed && trimmed !== dataURL){
+      try{ localStorage.setItem(sigKey(), JSON.stringify({ img: trimmed })); }catch(e){ return; }
+      _sigImgSrc = trimmed; _sigImg = new Image(); _sigImg.src = trimmed;
+      const box = document.getElementById('sigPreviewBox'); if(box) box.innerHTML = sigPreviewHtml();
+    }
+  });
+}
 function sigTodayStr(){ const n = new Date(); return String(n.getDate()).padStart(2,'0') + '/' + String(n.getMonth()+1).padStart(2,'0') + '/' + n.getFullYear(); }
-function getPdfSignature(){ const d = getSignatureData(); if(!d) return null; if(_sigImgSrc !== d.img){ _sigImgSrc = d.img; _sigImg = new Image(); _sigImg.src = d.img; } let nm = ''; try{ nm = ((typeof loadProfile === 'function' ? loadProfile() : {}) || {}).name || ''; }catch(e){} return { img: _sigImg, name: nm, date: sigTodayStr() }; }
+function getPdfSignature(){ const d = getSignatureData(); if(!d) return null; if(_sigImgSrc !== d.img){ _sigImgSrc = d.img; _sigImg = new Image(); _sigImg.onload = function(){ autoTrimStoredSignature(d.img); }; _sigImg.src = d.img; } let nm = ''; try{ nm = ((typeof loadProfile === 'function' ? loadProfile() : {}) || {}).name || ''; }catch(e){} return { img: _sigImg, name: nm, date: sigTodayStr() }; }
 function sigPreviewHtml(){ const d = getSignatureData(); let nm = ''; try{ nm = ((typeof loadProfile === 'function' ? loadProfile() : {}) || {}).name || ''; }catch(e){} if(!d) return '<div class="text-[13px] text-[#8B7355] text-center py-4 border border-dashed border-[#F3E8D3] rounded-[14px]">' + t('signatureEmpty') + '</div>'; return '<div class="border border-[#F3E8D3] rounded-[14px] p-3 bg-white text-right"><img src="' + d.img + '" style="max-width:230px;max-height:95px;margin-left:auto;display:block"><div class="font-bold text-[14px] mt-1">' + escA(nm) + '</div><div class="text-[12px] text-[#8B7355]">' + sigTodayStr() + '</div></div>'; }
 function openSigPicker(){ const el = document.getElementById('sigFileInput'); if(el) el.click(); }
-function onSignaturePicked(ev){ const f = ev && ev.target && ev.target.files && ev.target.files[0]; if(!f) return; const rd = new FileReader(); rd.onload = function(){ const im = new Image(); im.onload = function(){ try{ const maxW = 600; const sc = Math.min(1, maxW / im.naturalWidth); const cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(im.naturalWidth * sc)); cv.height = Math.max(1, Math.round(im.naturalHeight * sc)); const g = cv.getContext('2d'); g.fillStyle = '#ffffff'; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(im, 0, 0, cv.width, cv.height); const data = cv.toDataURL('image/jpeg', 0.85); try{ localStorage.setItem(sigKey(), JSON.stringify({ img: data })); }catch(e){ showToast(t('signatureTooBig')); return; } _sigImgSrc = ''; _sigImg = null; preloadSignatureImg(); const box = document.getElementById('sigPreviewBox'); if(box) box.innerHTML = sigPreviewHtml(); showToast(t('signatureSaved')); }catch(e){ showToast(t('signatureError')); } }; im.src = rd.result; }; rd.readAsDataURL(f); ev.target.value = ''; }
+function onSignaturePicked(ev){ const f = ev && ev.target && ev.target.files && ev.target.files[0]; if(!f) return; const rd = new FileReader(); rd.onload = function(){ const im = new Image(); im.onload = function(){ try{ const maxW = 600; const sc = Math.min(1, maxW / im.naturalWidth); const cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(im.naturalWidth * sc)); cv.height = Math.max(1, Math.round(im.naturalHeight * sc)); const g = cv.getContext('2d'); g.fillStyle = '#ffffff'; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(im, 0, 0, cv.width, cv.height); const rawData = cv.toDataURL('image/jpeg', 0.85); trimSignatureDataURL(rawData, function(data){ try{ localStorage.setItem(sigKey(), JSON.stringify({ img: data })); }catch(e){ showToast(t('signatureTooBig')); return; } _sigImgSrc = ''; _sigImg = null; preloadSignatureImg(); const box = document.getElementById('sigPreviewBox'); if(box) box.innerHTML = sigPreviewHtml(); showToast(t('signatureSaved')); }); }catch(e){ showToast(t('signatureError')); } }; im.src = rd.result; }; rd.readAsDataURL(f); ev.target.value = ''; }
 function deleteSignature(){ try{ localStorage.removeItem(sigKey()); }catch(e){} _sigImg = null; _sigImgSrc = ''; const box = document.getElementById('sigPreviewBox'); if(box) box.innerHTML = sigPreviewHtml(); showToast(t('signatureDeleted')); }
 function sigPdfPreviewHtml(){ const d = getSignatureData(); if(!d) return ''; let nm = ''; try{ nm = ((typeof loadProfile === 'function' ? loadProfile() : {}) || {}).name || ''; }catch(e){} return '<div style="display:flex;justify-content:flex-end;margin-top:36px"><div style="text-align:right;width:340px"><img src="' + d.img + '" style="max-width:300px;max-height:100px;display:block;margin-left:auto"><div style="font-weight:700;font-size:15px;margin-top:6px">' + escA(nm) + '</div><div style="font-size:13px;color:#555">' + sigTodayStr() + '</div></div></div>'; }
 preloadSignatureImg();
@@ -2742,7 +2775,7 @@ function pdfPersonSectionsJpegs(data){
       const _img = _sg.img;
       if(_img && _img.complete && _img.naturalWidth > 0){
         const _iw = 210, _ih = Math.min(62, Math.round(_iw * _img.naturalHeight / _img.naturalWidth));
-        ctx.drawImage(_img, W - M - 250 + (250 - _iw) / 2, _sy, _iw, _ih);
+        ctx.drawImage(_img, W - M - _iw, _sy, _iw, _ih);
         _sy += _ih + 4;
       }
       ctx.textAlign = 'right';
@@ -3069,7 +3102,7 @@ function pdfStatementJpegs(){
           const _img = _sg.img;
           if(_img && _img.complete && _img.naturalWidth > 0){
             const _iw = 210, _ih = Math.min(62, Math.round(_iw * _img.naturalHeight / _img.naturalWidth));
-            c2.drawImage(_img, W - M - 250 + (250 - _iw) / 2, _sy, _iw, _ih);
+            c2.drawImage(_img, W - M - _iw, _sy, _iw, _ih);
             _sy += _ih + 4;
           }
           c2.textAlign = 'right';
@@ -4973,7 +5006,7 @@ function renderReportPages(o){
       const _img = _sg.img;
       if(_img && _img.complete && _img.naturalWidth > 0){
         const _iw = 560, _ih = Math.min(190, Math.round(_iw * _img.naturalHeight / _img.naturalWidth));
-        ctx.drawImage(_img, W - M - 640 + (640 - _iw) / 2, _sy, _iw, _ih);
+        ctx.drawImage(_img, W - M - _iw, _sy, _iw, _ih);
         _sy += _ih + 10;
       }
       ctx.textAlign = 'right';
@@ -5391,7 +5424,7 @@ function renderPersonLoanPages(o){
       const _img = _sg.img;
       if(_img && _img.complete && _img.naturalWidth > 0){
         const _iw = 560, _ih = Math.min(190, Math.round(_iw * _img.naturalHeight / _img.naturalWidth));
-        ctx.drawImage(_img, W - M - 640 + (640 - _iw) / 2, _sy, _iw, _ih);
+        ctx.drawImage(_img, W - M - _iw, _sy, _iw, _ih);
         _sy += _ih + 10;
       }
       ctx.textAlign = 'right';
@@ -5651,7 +5684,7 @@ function renderAllLoansPages(o){
       const _img = _sg.img;
       if(_img && _img.complete && _img.naturalWidth > 0){
         const _iw = 560, _ih = Math.min(190, Math.round(_iw * _img.naturalHeight / _img.naturalWidth));
-        ctx.drawImage(_img, W - M - 640 + (640 - _iw) / 2, _sy, _iw, _ih);
+        ctx.drawImage(_img, W - M - _iw, _sy, _iw, _ih);
         _sy += _ih + 10;
       }
       ctx.textAlign = 'right';
@@ -5944,7 +5977,7 @@ function renderHistoryPages(o){
       const _img = _sg.img;
       if(_img && _img.complete && _img.naturalWidth > 0){
         const _iw = 560, _ih = Math.min(190, Math.round(_iw * _img.naturalHeight / _img.naturalWidth));
-        ctx.drawImage(_img, W - M - 640 + (640 - _iw) / 2, _sy, _iw, _ih);
+        ctx.drawImage(_img, W - M - _iw, _sy, _iw, _ih);
         _sy += _ih + 10;
       }
       ctx.textAlign = 'right';
