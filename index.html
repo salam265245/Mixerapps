@@ -93,16 +93,35 @@
 
 <div id="bazarOverlay" class="overlay hidden" onclick="closeBazar()"></div>
 <div id="bazarSheet" class="sheet hidden">
-  <div class="p-5">
-    <div class="flex justify-between items-center mb-4"><h2 class="text-[17px] font-extrabold" data-t="bazarTitle">Bazar</h2><button onclick="closeBazar()" class="text-xl px-2">✕</button></div>
+  <div class="sticky top-0 z-10 bg-white rounded-t-[24px] px-5 pt-5 pb-3">
+    <div class="flex justify-between items-center mb-4"><h2 class="text-[17px] font-extrabold" data-t="bazarTitle">Today Bazar</h2><button onclick="closeBazar()" class="text-xl px-2">✕</button></div>
+    <div id="bzSummaryBox" class="p-4 rounded-[16px] border border-[#F3E8D3]"></div>
+  </div>
+  <div class="px-5 pb-5">
+    <div class="p-4 rounded-[16px] bg-[#FFF8E1] border border-[#F3E8D3] mb-4">
+      <div class="font-bold text-[14px] mb-2" data-t="bzPasteTitle">📋 মেসেজ Paste করুন</div>
+      <textarea id="bzNoteInput" rows="3" maxlength="500" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px]" style="min-width:0"></textarea>
+      <div class="flex gap-2 mt-2">
+        <button onclick="addBazarNote()" class="flex-1 py-3 bg-[#616161] text-white font-bold text-[14px] rounded-[14px]" data-t="bzMakeList">✨ লিস্ট তৈরি করুন</button>
+        <button onclick="clearBzNote()" class="px-4 py-3 bg-white border border-[#F3E8D3] font-bold text-[14px] rounded-[14px]" data-t="bzClear">Clear</button>
+      </div>
+      <div class="text-[12px] text-[#8B7355] mt-2" data-t="bzPasteNote">কমা, স্পেস বা নতুন লাইনে আলাদা করলে অটো লিস্ট হবে</div>
+    </div>
+    <div class="p-4 rounded-[16px] border border-[#F3E8D3] mb-4">
+      <label class="text-[12px] font-bold text-[#8B7355]" data-t="bzItemName">পণ্যের নাম *</label>
+      <input id="bzQuickName" type="text" maxlength="200" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3">
+      <label class="text-[12px] font-bold text-[#8B7355]" data-t="bzPriceOpt">দাম (ঐচ্ছিক)</label>
+      <input id="bzQuickPrice" type="number" inputmode="decimal" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3">
+      <label class="text-[12px] font-bold text-[#8B7355]" data-t="date">তারিখ</label>
+      <input id="bzQuickDate" type="date" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-3 py-3 text-[14px] mt-1 mb-3">
+      <label class="text-[12px] font-bold text-[#8B7355]" data-t="bzCatOpt">ব্যয়ের খাত (ঐচ্ছিক)</label>
+      <select id="bzQuickCat" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3"></select>
+      <button onclick="addBazarQuick()" class="w-full py-3 bg-[#9E9E9E] text-white font-bold text-[14px] rounded-[14px]" data-t="bzAddToList">লিস্টে যোগ করুন</button>
+    </div>
     <div class="flex gap-2 mb-3">
       <button id="bzTabAll" onclick="setBazarFilter('all')" class="px-3 py-1.5 rounded-full text-[12px] font-bold bg-[#E3F2FD]" data-t="allLbl">All</button>
       <button id="bzTabBought" onclick="setBazarFilter('bought')" class="px-3 py-1.5 rounded-full text-[12px] font-bold bg-white border border-[#F3E8D3]" data-t="bought">Bought</button>
       <button id="bzTabPending" onclick="setBazarFilter('pending')" class="px-3 py-1.5 rounded-full text-[12px] font-bold bg-white border border-[#F3E8D3]" data-t="notBought">Not Bought</button>
-    </div>
-    <div class="flex gap-2 mb-4">
-      <textarea id="bzNoteInput" rows="2" maxlength="500" class="flex-1 bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px]" style="min-width:0"></textarea>
-      <button onclick="addBazarNote()" class="px-4 py-3 rounded-[14px] bg-[#E3F2FD] font-bold text-[14px] shrink-0" data-t="addNote">Add Note</button>
     </div>
     <div id="bazarList"></div>
   </div>
@@ -316,6 +335,15 @@ const T = {
     passShort:'Password কমপক্ষে ৬ অক্ষর হতে হবে',
     authNoConfig:'Cloud Login-এর জন্য Config লাগবে',
     saveProfileBtn:'সংরক্ষণ করুন',
+    signatureTitle:'সিগনেচার',
+    signatureNote:'PDF ফাইলের নিচে ডান পাশে এই সিগনেচার, আপনার নাম আর আজকের তারিখ অটোমেটিক বসবে। সিগনেচার এই Profile নামের সাথে সেভ থাকবে।',
+    signatureUpload:'সিগনেচার আপলোড',
+    signatureDelete:'মুছুন',
+    signatureEmpty:'এখনো কোনো সিগনেচার আপলোড করা হয়নি',
+    signatureSaved:'সিগনেচার সেভ হয়েছে',
+    signatureDeleted:'সিগনেচার মুছে ফেলা হয়েছে',
+    signatureTooBig:'ছবিটা অনেক বড় — ছোট ছবি দিয়ে চেষ্টা করুন',
+    signatureError:'সিগনেচার সেভ করা যায়নি',
     addressLbl:'ঠিকানা',
     reportsPageTitle:'রিপোর্ট',
     repIncome:'আয়',
@@ -350,7 +378,7 @@ const T = {
     cloudSyncDone:'Sync হয়ে গেছে ✅', cloudUploadDone:'Upload হয়ে গেছে ✅', cloudDownloadDone:'Download হয়ে গেছে ✅',
     cloudSyncFail:'Sync হয়নি — ইন্টারনেট / Config দেখো', cloudSaved:'Cloud সেটিংস সেভ হয়েছে',
     cloudCleared:'Cloud সংযোগ মুছে ফেলা হয়েছে', cloudInvalidConfig:'Config ঠিক নেই — JSON দেখো', cloudNoCode:'Sync Code দাও',
-    cloudSetupTitle:'সেটআপ কীভাবে করবে (একবারই)', bazarTitle:'বাজার', bazarList:'বাজার লিস্ট', bought:'কেনা হয়েছে', notBought:'কেনা হয়নি', itemsLbl:'টা আইটেম', addNote:'নোট যোগ করো', notePh:'কী কিনতে হবে লিখো…', editBtn:'এডিট', yesBtn:'হ্যাঁ', noBtn:'না', deleteBtn:'ডিলিট', priceLbl:'দাম', needPriceCat:'দাম আর খাত সিলেক্ট করো, তারপর সেভ হবে', addedToExpense:'খরচে যোগ হয়েছে', notBoughtYet:'এখনো কেনা হয়নি', confirmDelete:'এই আইটেমটা ডিলিট করবো?', allLbl:'সব', buyTitle:'কেনা হয়েছে — খরচে সেভ করো', editItemTitle:'আইটেম এডিট করো', itemLbl:'আইটেম', emptyBazar:'এখনো কিছু নেই', boughtNote:'এই আইটেমের খরচ ইতিমধ্যে খরচে যোগ হয়েছে — এখানে এডিট করলে শুধু বাজার লিস্ট বদলাবে', writeNote:'আগে নোট লিখো', movedBack:'কেনা হয়নি-তে ফিরে গেছে — খরচ কমে গেছে',   fAll:'সব', fIncome:'আয়', fExpense:'ব্যয়', fGiven:'প্রদান', fTaken:'গ্রহণ', fReturn:'ফেরত', fRepay:'পরিশোধ', fBank:'ব্যাংক লোন', histSearchPh:'লেনদেন খুঁজুন…', addPerson:'লোক যোগ করো', addReturn:'ফেরত যোগ করো', addRepay:'পরিশোধ যোগ করো', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'তারিখ মুছো', filterByCat:'খাত দিয়ে ফিল্টার', filtered:'ফিল্টার', records:'টি রেকর্ড', noData:'এখনো ডেটা নেই', editIncome:'আয় এডিট করো', editExpense:'ব্যয় এডিট করো', confirmDeleteTx:'এই লেনদেনটা ডিলিট করবো?', deletedTx:'লেনদেন ডিলিট হয়েছে', loanEntryTitle:'লোনের এন্ট্রি এডিট করো', personCol:'লোক', commentCol:'মন্তব্য', fromCol:'From', toCol:'To', amountCol:'টাকা', totalIncome:'মোট আয়', totalExpense:'মোট ব্যয়', netBalance:'নেট জের', printPdf:'প্রিন্ট / PDF সেভ করো', pdfFail:'PDF বানানো যায়নি। আবার চেষ্টা করুন।', closeBtn:'বন্ধ করো', fromToSep:' থেকে ', loansGivenPage:'প্রদত্ত লোন', loansTakenPage:'গৃহীত লোন', bankLoansPage:'ব্যাংক লোন', searchPeople:'লোক খুঁজুন…', peopleLbl:'জন লোক', entriesLbl:'টি এন্ট্রি', youWillGet:'তুমি পাবে', youWillPay:'তুমি দেবে', loanEntries:'লোনের এন্ট্রি', paymentsSec:'পেমেন্ট', summaryLbl:'সারাংশ', overdueLbl:'বকেয়া', descLbl:'বিবরণ', dateLbl:'তারিখ', noteLbl:'নোট', addLoanBtn:'+ লোন যোগ করো', addPaymentBtn:'+ পেমেন্ট যোগ করো', addBankLoanBtn:'+ ব্যাংক লোন যোগ করো', personName:'লোকের নাম', mobileNo:'মোবাইল নম্বর', selectPerson:'লোক বাছো', bankNameLbl:'ব্যাংকের নাম', saveLoan:'লোন সেভ করো', loanAmountLbl:'লোনের পরিমাণ', termLbl:'মেয়াদ (মাস)', disbursementLbl:'বিতরণের তারিখ', emiStartLbl:'EMI শুরুর তারিখ', emiEndLbl:'EMI শেষের তারিখ (অটো)', selectBank:'ব্যাংক বাছুন', monthsLbl:'মাস', rateLbl:'সুদের হার %', backBtn:'← ফিরে যাও', balanceLbl:'জের', totalLbl:'মোট', addLoanTitle:'লোন যোগ করো', addPersonLoanTitle:'+ লোক যোগ করো', nameLbl:'নাম', mobileContactLbl:'মোবাইল / যোগাযোগ নম্বর', fromChannelLbl:'কোথা থেকে', toChannelLbl:'কোথায়', expectedReturnLbl:'ফেরতের সম্ভাব্য তারিখ', newPersonNamePh:'নতুন লোকের নাম', typeManuallyPh:'নিজে লিখুন বা কন্ট্যাক্ট থেকে নিন', newPerson:'নতুন লোক', addPaymentTitle:'পেমেন্ট যোগ করো', addPersonTitle:'লোক যোগ করো', addBankLoanTitle:'ব্যাংক লোন', needName:'নাম লিখো', personAdded:'লোক যোগ হয়েছে', loanAdded:'লোন যোগ হয়েছে', paymentAdded:'পেমেন্ট যোগ হয়েছে', bankLoanAdded:'ব্যাংক লোন যোগ হয়েছে', noPeople:'এখনো কেউ নেই', editPersonTitle:'লোক এডিট করো', confirmDeletePerson:'এই লোক ও তার সব এন্ট্রি মুছে ফেলবো?', personDeleted:'লোক মুছে ফেলা হয়েছে', personUpdated:'লোকের তথ্য আপডেট হয়েছে', excelBtn:'⬇ Excel (CSV)', csvSaved:'এক্সেল ফাইল ডাউনলোড হয়েছে', profileTitle:'আমার প্রোফাইল', fullName:'পূর্ণ নাম', designation:'পদবি / উপাধি', addressLbl:'ঠিকানা', mobileLbl:'মোবাইল নম্বর', emailLbl:'ইমেইল', dobLbl:'জন্ম তারিখ', bloodLbl:'রক্তের গ্রুপ', nidLbl:'NID নম্বর', tapToEdit:'নামে চাপ দিলে প্রোফাইল এডিট হবে', yourName:'আপনার নাম', profileSaved:'প্রোফাইল সেভ হয়েছে' },
+    cloudSetupTitle:'সেটআপ কীভাবে করবে (একবারই)', bazarTitle:'Today Bazar', bzTotal:'মোট', bzBought:'কেনা', bzRemaining:'বাকি', bzPasteTitle:'📋 মেসেজ Paste করুন', bzMakeList:'✨ লিস্ট তৈরি করুন', bzClear:'Clear', bzPasteNote:'কমা, স্পেস বা নতুন লাইনে আলাদা করলে অটো লিস্ট হবে', bzItemName:'পণ্যের নাম *', bzItemNamePh:'যেমন: আলু', bzPriceOpt:'দাম (ঐচ্ছিক)', bzPricePh:'0 - পরে দিতে পারবেন', bzCatOpt:'ব্যয়ের খাত (ঐচ্ছিক)', bzCatPh:'খাত নির্বাচন করুন (ঐচ্ছিক)', bzAddToList:'লিস্টে যোগ করুন', bzPricePending:'দাম বাকি', bzNeedName:'আগে পণ্যের নাম লিখো', bazarList:'বাজার লিস্ট', bought:'কেনা হয়েছে', notBought:'কেনা হয়নি', itemsLbl:'টা আইটেম', addNote:'নোট যোগ করো', notePh:'যেমন: আলু, পেঁয়াজ, রসুন বা আলু পেঁয়াজ রসুন বা প্রতি লাইনে একটা', editBtn:'এডিট', yesBtn:'হ্যাঁ', noBtn:'না', deleteBtn:'ডিলিট', priceLbl:'দাম', needPriceCat:'দাম আর খাত সিলেক্ট করো, তারপর সেভ হবে', addedToExpense:'খরচে যোগ হয়েছে', notBoughtYet:'এখনো কেনা হয়নি', confirmDelete:'এই আইটেমটা ডিলিট করবো?', allLbl:'সব', buyTitle:'কেনা হয়েছে — খরচে সেভ করো', editItemTitle:'আইটেম এডিট করো', itemLbl:'আইটেম', emptyBazar:'এখনো কিছু নেই', boughtNote:'এই আইটেমের খরচ ইতিমধ্যে খরচে যোগ হয়েছে — এখানে এডিট করলে শুধু বাজার লিস্ট বদলাবে', writeNote:'আগে নোট লিখো', movedBack:'কেনা হয়নি-তে ফিরে গেছে — খরচ কমে গেছে',   fAll:'সব', fIncome:'আয়', fExpense:'ব্যয়', fGiven:'প্রদান', fTaken:'গ্রহণ', fReturn:'ফেরত', fRepay:'পরিশোধ', fBank:'ব্যাংক লোন', histSearchPh:'লেনদেন খুঁজুন…', addPerson:'লোক যোগ করো', addReturn:'ফেরত যোগ করো', addRepay:'পরিশোধ যোগ করো', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'তারিখ মুছো', filterByCat:'খাত দিয়ে ফিল্টার', filtered:'ফিল্টার', records:'টি রেকর্ড', noData:'এখনো ডেটা নেই', editIncome:'আয় এডিট করো', editExpense:'ব্যয় এডিট করো', confirmDeleteTx:'এই লেনদেনটা ডিলিট করবো?', deletedTx:'লেনদেন ডিলিট হয়েছে', loanEntryTitle:'লোনের এন্ট্রি এডিট করো', personCol:'লোক', commentCol:'মন্তব্য', fromCol:'From', toCol:'To', amountCol:'টাকা', totalIncome:'মোট আয়', totalExpense:'মোট ব্যয়', netBalance:'নেট জের', printPdf:'প্রিন্ট / PDF সেভ করো', pdfFail:'PDF বানানো যায়নি। আবার চেষ্টা করুন।', closeBtn:'বন্ধ করো', fromToSep:' থেকে ', loansGivenPage:'প্রদত্ত লোন', loansTakenPage:'গৃহীত লোন', bankLoansPage:'ব্যাংক লোন', searchPeople:'লোক খুঁজুন…', peopleLbl:'জন লোক', entriesLbl:'টি এন্ট্রি', youWillGet:'তুমি পাবে', youWillPay:'তুমি দেবে', loanEntries:'লোনের এন্ট্রি', paymentsSec:'পেমেন্ট', summaryLbl:'সারাংশ', overdueLbl:'বকেয়া', descLbl:'বিবরণ', dateLbl:'তারিখ', noteLbl:'নোট', addLoanBtn:'+ লোন যোগ করো', addPaymentBtn:'+ পেমেন্ট যোগ করো', addBankLoanBtn:'+ ব্যাংক লোন যোগ করো', personName:'লোকের নাম', mobileNo:'মোবাইল নম্বর', selectPerson:'লোক বাছো', bankNameLbl:'ব্যাংকের নাম', saveLoan:'লোন সেভ করো', loanAmountLbl:'লোনের পরিমাণ', termLbl:'মেয়াদ (মাস)', disbursementLbl:'বিতরণের তারিখ', emiStartLbl:'EMI শুরুর তারিখ', emiEndLbl:'EMI শেষের তারিখ (অটো)', selectBank:'ব্যাংক বাছুন', monthsLbl:'মাস', rateLbl:'সুদের হার %', backBtn:'← ফিরে যাও', balanceLbl:'জের', totalLbl:'মোট', addLoanTitle:'লোন যোগ করো', addPersonLoanTitle:'+ লোক যোগ করো', nameLbl:'নাম', mobileContactLbl:'মোবাইল / যোগাযোগ নম্বর', fromChannelLbl:'কোথা থেকে', toChannelLbl:'কোথায়', expectedReturnLbl:'ফেরতের সম্ভাব্য তারিখ', newPersonNamePh:'নতুন লোকের নাম', typeManuallyPh:'নিজে লিখুন বা কন্ট্যাক্ট থেকে নিন', newPerson:'নতুন লোক', addPaymentTitle:'পেমেন্ট যোগ করো', addPersonTitle:'লোক যোগ করো', addBankLoanTitle:'ব্যাংক লোন', needName:'নাম লিখো', personAdded:'লোক যোগ হয়েছে', loanAdded:'লোন যোগ হয়েছে', paymentAdded:'পেমেন্ট যোগ হয়েছে', bankLoanAdded:'ব্যাংক লোন যোগ হয়েছে', noPeople:'এখনো কেউ নেই', editPersonTitle:'লোক এডিট করো', confirmDeletePerson:'এই লোক ও তার সব এন্ট্রি মুছে ফেলবো?', personDeleted:'লোক মুছে ফেলা হয়েছে', personUpdated:'লোকের তথ্য আপডেট হয়েছে', excelBtn:'⬇ Excel (CSV)', csvSaved:'এক্সেল ফাইল ডাউনলোড হয়েছে', profileTitle:'আমার প্রোফাইল', fullName:'পূর্ণ নাম', designation:'পদবি / উপাধি', addressLbl:'ঠিকানা', mobileLbl:'মোবাইল নম্বর', emailLbl:'ইমেইল', dobLbl:'জন্ম তারিখ', bloodLbl:'রক্তের গ্রুপ', nidLbl:'NID নম্বর', tapToEdit:'নামে চাপ দিলে প্রোফাইল এডিট হবে', yourName:'আপনার নাম', profileSaved:'প্রোফাইল সেভ হয়েছে' },
   en: { home:'HOME', history:'History', reports:'Reports', profile:'Profile', addNewTx:'Add New Transaction', addIncome:'Add Income', addExpense:'Add Expense', giveLoan:'Give Loan', takeLoan:'Take Loan', bankLoan:'Bank Loan', selectedCat:'Selected Category', cancel:'Cancel', amount:'Amount (৳)', category:'Category', date:'Date', medium:'Medium', note:'Note', saved:'Saved', pickCat:'Pick a category', searchPh:'Search… e.g. Fish', noMatch:'No match found', todayIncome:"Today's Income", todayExpense:"Today's Expense", todayBalance:"Today's Balance", monthIncome:'Monthly Income', monthExpense:'Monthly Expense', monthBalance:'Monthly Balance', loansTitle:'Loans & Receivables', totalGiven:'Total Given', totalTaken:'Total Taken', given:'Given', taken:'Taken', returned:'Returned', repaid:'Repaid', dueLbl:'Due', localSaved:'Saved locally', comingSoon:'Coming in Phase 3', time:'Time', day:'Day', syncNow:'Sync Now', upload:'Upload', syncSoon:'Cloud Sync comes in Phase 4',
     cloudTitle:'Cloud Sync', cloudDesc:'Use the same Sync Code on both phones to merge their data.',
     syncCodeLbl:'Sync Code', cloudLastSync:'Last sync: ', cloudNever:'Never synced',
@@ -374,6 +402,15 @@ const T = {
     passShort:'Password must be at least 6 characters',
     authNoConfig:'Cloud login needs Config',
     saveProfileBtn:'Save',
+    signatureTitle:'Signature',
+    signatureNote:"This signature, your name and today's date will appear automatically at the bottom-right of PDF files. The signature is saved with this profile name.",
+    signatureUpload:'Upload Signature',
+    signatureDelete:'Delete',
+    signatureEmpty:'No signature uploaded yet',
+    signatureSaved:'Signature saved',
+    signatureDeleted:'Signature deleted',
+    signatureTooBig:'Image is too large — try a smaller image',
+    signatureError:'Could not save signature',
     addressLbl:'Address',
     reportsPageTitle:'Reports',
     repIncome:'Income',
@@ -408,7 +445,7 @@ const T = {
     cloudSyncDone:'Synced ✅', cloudUploadDone:'Uploaded ✅', cloudDownloadDone:'Downloaded ✅',
     cloudSyncFail:'Sync failed — check internet / Config', cloudSaved:'Cloud settings saved',
     cloudCleared:'Cloud connection removed', cloudInvalidConfig:'Config looks wrong — check the JSON', cloudNoCode:'Enter a Sync Code',
-    cloudSetupTitle:'How to set up (once)', bazarTitle:'Bazar', bazarList:'Bazar List', bought:'Bought', notBought:'Not Bought', itemsLbl:'items', addNote:'Add Note', notePh:'What to buy…', editBtn:'Edit', yesBtn:'Yes', noBtn:'No', deleteBtn:'Delete', priceLbl:'Price', needPriceCat:'Select price and category first', addedToExpense:'Added to expense', notBoughtYet:'Not bought yet', confirmDelete:'Delete this item?', allLbl:'All', buyTitle:'Bought — Save to Expense', editItemTitle:'Edit Item', itemLbl:'Item', emptyBazar:'Nothing here yet', boughtNote:'This item is already in expense — editing here changes only the bazar list', writeNote:'Write a note first', movedBack:'Moved back to Not Bought — expense removed',   fAll:'All', fIncome:'Income', fExpense:'Expense', fGiven:'Given', fTaken:'Taken', fReturn:'Return', fRepay:'Repayment', fBank:'Bank Loan', histSearchPh:'Search transactions…', addPerson:'Add Person', addReturn:'Add Return', addRepay:'Add Repayment', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'Date Clear', filterByCat:'Filter by Category', filtered:'Filtered', records:'records', noData:'No data yet', editIncome:'Edit Income', editExpense:'Edit Expense', confirmDeleteTx:'Delete this transaction?', deletedTx:'Transaction deleted', loanEntryTitle:'Edit Loan Entry', personCol:'Person', commentCol:'Comment', fromCol:'From', toCol:'To', amountCol:'Amount', totalIncome:'Total Income', totalExpense:'Total Expense', netBalance:'Net Balance', printPdf:'Print / Save PDF', pdfFail:'Could not make PDF. Please try again.', closeBtn:'Close', fromToSep:' to ', loansGivenPage:'Loans Given', loansTakenPage:'Loans Taken', bankLoansPage:'Bank Loans', searchPeople:'Search people…', peopleLbl:'people', entriesLbl:'entries', youWillGet:'You will get', youWillPay:'You will pay', loanEntries:'Loan Entries', paymentsSec:'Payments', summaryLbl:'Summary', overdueLbl:'Overdue', descLbl:'Description', dateLbl:'Date', noteLbl:'Note', addLoanBtn:'+ Add Loan', addPaymentBtn:'+ Add Payment', addBankLoanBtn:'+ Add Bank Loan', personName:'Person name', mobileNo:'Mobile number', selectPerson:'Select person', bankNameLbl:'Bank Name', saveLoan:'Save Loan', loanAmountLbl:'Loan Amount', termLbl:'Term (months)', disbursementLbl:'Disbursement Date', emiStartLbl:'EMI Start Date', emiEndLbl:'EMI End Date (auto)', selectBank:'Select bank', monthsLbl:'Months', rateLbl:'Interest Rate %', backBtn:'← Back', balanceLbl:'Balance', totalLbl:'Total', addLoanTitle:'Add Loan', addPersonLoanTitle:'+ Add Person', nameLbl:'Name', mobileContactLbl:'Mobile / Contact Number', fromChannelLbl:'From Channel', toChannelLbl:'To Channel', expectedReturnLbl:'Expected Return Date', newPersonNamePh:'New person name', typeManuallyPh:'Type manually or pick from contacts', newPerson:'New person', addPaymentTitle:'Add Payment', addPersonTitle:'Add Person', addBankLoanTitle:'Bank Loan', needName:'Enter a name', personAdded:'Person added', loanAdded:'Loan added', paymentAdded:'Payment added', bankLoanAdded:'Bank loan added', noPeople:'No people yet', editPersonTitle:'Edit Person', confirmDeletePerson:'Delete this person and all their entries?', personDeleted:'Person deleted', personUpdated:'Person updated', excelBtn:'⬇ Excel (CSV)', csvSaved:'Excel file downloaded', profileTitle:'My Profile', fullName:'Full Name', designation:'Designation / Title', addressLbl:'Address', mobileLbl:'Mobile Number', emailLbl:'Email', dobLbl:'Date of Birth', bloodLbl:'Blood Group', nidLbl:'NID Number', tapToEdit:'Tap name to edit profile', yourName:'Your Name', profileSaved:'Profile saved' }
+    cloudSetupTitle:'How to set up (once)', bazarTitle:'Today Bazar', bzTotal:'Total', bzBought:'Bought', bzRemaining:'Remaining', bzPasteTitle:'📋 Paste message', bzMakeList:'✨ Create List', bzClear:'Clear', bzPasteNote:'Comma, space or new line will auto-split into a list', bzItemName:'Item Name *', bzItemNamePh:'e.g. Potato', bzPriceOpt:'Price (optional)', bzPricePh:'0 - you can add later', bzCatOpt:'Expense Category (optional)', bzCatPh:'Select category (optional)', bzAddToList:'Add to List', bzPricePending:'Price pending', bzNeedName:'Write the item name first', bazarList:'Bazar List', bought:'Bought', notBought:'Not Bought', itemsLbl:'items', addNote:'Add Note', notePh:'e.g. Potato, Onion, Garlic or one per line', editBtn:'Edit', yesBtn:'Yes', noBtn:'No', deleteBtn:'Delete', priceLbl:'Price', needPriceCat:'Select price and category first', addedToExpense:'Added to expense', notBoughtYet:'Not bought yet', confirmDelete:'Delete this item?', allLbl:'All', buyTitle:'Bought — Save to Expense', editItemTitle:'Edit Item', itemLbl:'Item', emptyBazar:'Nothing here yet', boughtNote:'This item is already in expense — editing here changes only the bazar list', writeNote:'Write a note first', movedBack:'Moved back to Not Bought — expense removed',   fAll:'All', fIncome:'Income', fExpense:'Expense', fGiven:'Given', fTaken:'Taken', fReturn:'Return', fRepay:'Repayment', fBank:'Bank Loan', histSearchPh:'Search transactions…', addPerson:'Add Person', addReturn:'Add Return', addRepay:'Add Repayment', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'Date Clear', filterByCat:'Filter by Category', filtered:'Filtered', records:'records', noData:'No data yet', editIncome:'Edit Income', editExpense:'Edit Expense', confirmDeleteTx:'Delete this transaction?', deletedTx:'Transaction deleted', loanEntryTitle:'Edit Loan Entry', personCol:'Person', commentCol:'Comment', fromCol:'From', toCol:'To', amountCol:'Amount', totalIncome:'Total Income', totalExpense:'Total Expense', netBalance:'Net Balance', printPdf:'Print / Save PDF', pdfFail:'Could not make PDF. Please try again.', closeBtn:'Close', fromToSep:' to ', loansGivenPage:'Loans Given', loansTakenPage:'Loans Taken', bankLoansPage:'Bank Loans', searchPeople:'Search people…', peopleLbl:'people', entriesLbl:'entries', youWillGet:'You will get', youWillPay:'You will pay', loanEntries:'Loan Entries', paymentsSec:'Payments', summaryLbl:'Summary', overdueLbl:'Overdue', descLbl:'Description', dateLbl:'Date', noteLbl:'Note', addLoanBtn:'+ Add Loan', addPaymentBtn:'+ Add Payment', addBankLoanBtn:'+ Add Bank Loan', personName:'Person name', mobileNo:'Mobile number', selectPerson:'Select person', bankNameLbl:'Bank Name', saveLoan:'Save Loan', loanAmountLbl:'Loan Amount', termLbl:'Term (months)', disbursementLbl:'Disbursement Date', emiStartLbl:'EMI Start Date', emiEndLbl:'EMI End Date (auto)', selectBank:'Select bank', monthsLbl:'Months', rateLbl:'Interest Rate %', backBtn:'← Back', balanceLbl:'Balance', totalLbl:'Total', addLoanTitle:'Add Loan', addPersonLoanTitle:'+ Add Person', nameLbl:'Name', mobileContactLbl:'Mobile / Contact Number', fromChannelLbl:'From Channel', toChannelLbl:'To Channel', expectedReturnLbl:'Expected Return Date', newPersonNamePh:'New person name', typeManuallyPh:'Type manually or pick from contacts', newPerson:'New person', addPaymentTitle:'Add Payment', addPersonTitle:'Add Person', addBankLoanTitle:'Bank Loan', needName:'Enter a name', personAdded:'Person added', loanAdded:'Loan added', paymentAdded:'Payment added', bankLoanAdded:'Bank loan added', noPeople:'No people yet', editPersonTitle:'Edit Person', confirmDeletePerson:'Delete this person and all their entries?', personDeleted:'Person deleted', personUpdated:'Person updated', excelBtn:'⬇ Excel (CSV)', csvSaved:'Excel file downloaded', profileTitle:'My Profile', fullName:'Full Name', designation:'Designation / Title', addressLbl:'Address', mobileLbl:'Mobile Number', emailLbl:'Email', dobLbl:'Date of Birth', bloodLbl:'Blood Group', nidLbl:'NID Number', tapToEdit:'Tap name to edit profile', yourName:'Your Name', profileSaved:'Profile saved' }
 };
 let lang = loadLS('lifestyle_lang', 'bn');
 let state = { transactions: loadLS('lifestyle_transactions', []), peopleGiven: loadLS('lifestyle_people_given', []), peopleTaken: loadLS('lifestyle_people_taken', []), bankLoans: loadLS('lifestyle_bank_loans', []), recycle: loadLS('lifestyle_recycle', []) };
@@ -884,6 +921,16 @@ function renderProfileView(){
     '<label class="text-[12px] font-bold text-[#8B7355]">' + t('mobileLbl') + '</label><input id="pMob" type="tel" value="' + escA(profile.mobile || '') + '" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3">' +
     '<button onclick="saveProfile()" class="w-full py-3.5 rounded-full bg-[#E3F2FD] font-bold text-[15px] mt-1">' + t('saveProfileBtn') + '</button>' +
     '</div>';
+  h += '<div class="bg-white rounded-[22px] border border-[#F3E8D3] p-5 mb-4">' +
+    '<div class="font-extrabold text-[15px] mb-1">\u270d\ufe0f ' + t('signatureTitle') + '</div>' +
+    '<div class="text-[12px] text-[#8B7355] mb-3">' + t('signatureNote') + '</div>' +
+    '<div id="sigPreviewBox" class="mb-3">' + sigPreviewHtml() + '</div>' +
+    '<input type="file" id="sigFileInput" accept="image/*" class="hidden" onchange="onSignaturePicked(event)">' +
+    '<div class="flex gap-2">' +
+    '<button onclick="openSigPicker()" class="flex-1 py-3 rounded-full bg-[#E3F2FD] font-bold text-[14px]">\ud83d\udce4 ' + t('signatureUpload') + '</button>' +
+    '<button onclick="deleteSignature()" class="px-4 py-3 rounded-full border border-[#F3E8D3] font-bold text-[14px]">\ud83d\uddd1\ufe0f ' + t('signatureDelete') + '</button>' +
+    '</div>' +
+    '</div>';
   h += developerCardHtml();
   h += '</div>';
   document.getElementById('app').innerHTML = h;
@@ -1159,6 +1206,21 @@ function loanEntrySaveBtn(){
   if(b && b.offsetParent) return b;
   return document.querySelector('#leBottomBtns button[onclick="saveLoanEntry()"]');
 }
+
+/* ---------- Signature (saved per profile user) ---------- */
+function sigKey(){ try{ const n = ((typeof loadProfile === 'function' ? loadProfile() : {}) || {}).name || ''; return 'lifestyle_signature_' + n; }catch(e){ return 'lifestyle_signature_'; } }
+function getSignatureData(){ try{ const raw = localStorage.getItem(sigKey()); if(!raw) return null; const o = JSON.parse(raw); if(o && o.img) return o; }catch(e){} return null; }
+let _sigImg = null, _sigImgSrc = '';
+function preloadSignatureImg(){ const d = getSignatureData(); if(!d){ _sigImg = null; _sigImgSrc = ''; return; } if(_sigImgSrc === d.img && _sigImg) return; _sigImgSrc = d.img; _sigImg = new Image(); _sigImg.src = d.img; }
+function sigTodayStr(){ const n = new Date(); return String(n.getDate()).padStart(2,'0') + '/' + String(n.getMonth()+1).padStart(2,'0') + '/' + n.getFullYear(); }
+function getPdfSignature(){ const d = getSignatureData(); if(!d) return null; if(_sigImgSrc !== d.img){ _sigImgSrc = d.img; _sigImg = new Image(); _sigImg.src = d.img; } let nm = ''; try{ nm = ((typeof loadProfile === 'function' ? loadProfile() : {}) || {}).name || ''; }catch(e){} return { img: _sigImg, name: nm, date: sigTodayStr() }; }
+function sigPreviewHtml(){ const d = getSignatureData(); let nm = ''; try{ nm = ((typeof loadProfile === 'function' ? loadProfile() : {}) || {}).name || ''; }catch(e){} if(!d) return '<div class="text-[13px] text-[#8B7355] text-center py-4 border border-dashed border-[#F3E8D3] rounded-[14px]">' + t('signatureEmpty') + '</div>'; return '<div class="border border-[#F3E8D3] rounded-[14px] p-3 bg-white text-right"><img src="' + d.img + '" style="max-width:230px;max-height:95px;margin-left:auto;display:block"><div class="font-bold text-[14px] mt-1">' + escA(nm) + '</div><div class="text-[12px] text-[#8B7355]">' + sigTodayStr() + '</div></div>'; }
+function openSigPicker(){ const el = document.getElementById('sigFileInput'); if(el) el.click(); }
+function onSignaturePicked(ev){ const f = ev && ev.target && ev.target.files && ev.target.files[0]; if(!f) return; const rd = new FileReader(); rd.onload = function(){ const im = new Image(); im.onload = function(){ try{ const maxW = 600; const sc = Math.min(1, maxW / im.naturalWidth); const cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(im.naturalWidth * sc)); cv.height = Math.max(1, Math.round(im.naturalHeight * sc)); const g = cv.getContext('2d'); g.fillStyle = '#ffffff'; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(im, 0, 0, cv.width, cv.height); const data = cv.toDataURL('image/jpeg', 0.85); try{ localStorage.setItem(sigKey(), JSON.stringify({ img: data })); }catch(e){ showToast(t('signatureTooBig')); return; } _sigImgSrc = ''; _sigImg = null; preloadSignatureImg(); const box = document.getElementById('sigPreviewBox'); if(box) box.innerHTML = sigPreviewHtml(); showToast(t('signatureSaved')); }catch(e){ showToast(t('signatureError')); } }; im.src = rd.result; }; rd.readAsDataURL(f); ev.target.value = ''; }
+function deleteSignature(){ try{ localStorage.removeItem(sigKey()); }catch(e){} _sigImg = null; _sigImgSrc = ''; const box = document.getElementById('sigPreviewBox'); if(box) box.innerHTML = sigPreviewHtml(); showToast(t('signatureDeleted')); }
+function sigPdfPreviewHtml(){ const d = getSignatureData(); if(!d) return ''; let nm = ''; try{ nm = ((typeof loadProfile === 'function' ? loadProfile() : {}) || {}).name || ''; }catch(e){} return '<div style="display:flex;justify-content:flex-end;margin-top:36px"><div style="text-align:right;width:340px"><img src="' + d.img + '" style="max-width:300px;max-height:100px;display:block;margin-left:auto"><div style="font-weight:700;font-size:15px;margin-top:6px">' + escA(nm) + '</div><div style="font-size:13px;color:#555">' + sigTodayStr() + '</div></div></div>'; }
+preloadSignatureImg();
+
 function saveProfile(){
   profile = Object.assign({}, profile, {
     name: ((document.getElementById('pName') || {}).value || '').trim(),
@@ -1287,6 +1349,13 @@ function openBazar(filter){
   bazarFilter = filter || 'all';
   const inp = document.getElementById('bzNoteInput');
   if(inp) inp.placeholder = t('notePh');
+  const qn = document.getElementById('bzQuickName');
+  if(qn) qn.placeholder = t('bzItemNamePh');
+  const qp = document.getElementById('bzQuickPrice');
+  if(qp) qp.placeholder = t('bzPricePh');
+  const qd = document.getElementById('bzQuickDate');
+  if(qd) qd.value = today();
+  renderBzQuickCats();
   updateBazarTabs();
   document.getElementById('bazarSheet').classList.remove('hidden');
   document.getElementById('bazarOverlay').classList.remove('hidden');
@@ -1358,22 +1427,61 @@ function addBazarNote(){
   showToast(t('saved'));
 }
 function renderBazarList(){
+  const st = bazarStats();
+  const sumBox = document.getElementById('bzSummaryBox');
+  if(sumBox) sumBox.innerHTML = '<div class="grid grid-cols-3 gap-2 text-center">' +
+    '<div><div class="text-[12px] text-[#8B7355]">' + t('bzTotal') + '</div><div class="font-extrabold text-[16px]">' + fmt(st.all.sum) + '</div></div>' +
+    '<div><div class="text-[12px] text-[#8B7355]">' + t('bzBought') + '</div><div class="font-extrabold text-[16px] text-green-700">' + fmt(st.bought.sum) + '</div></div>' +
+    '<div><div class="text-[12px] text-[#8B7355]">' + t('bzRemaining') + '</div><div class="font-extrabold text-[16px] text-red-600">' + fmt(st.pending.sum) + '</div></div>' +
+    '</div>';
+  renderBzQuickCats();
   const box = document.getElementById('bazarList');
   if(!box) return;
   const list = bazarFilter === 'bought' ? bazar.filter(x => x.status === 'bought')
     : bazarFilter === 'pending' ? bazar.filter(x => x.status !== 'bought') : bazar;
   if(!list.length){ box.innerHTML = '<div class="text-center text-[13px] text-[#8B7355] py-4">' + t('emptyBazar') + '</div>'; return; }
   box.innerHTML = list.map(it => {
-    const cat = (it.catIdx !== null && it.catIdx !== undefined && it.catIdx !== '') ? EXPENSE_FLAT[+it.catIdx] : null;
-    const meta = [(it.price ? fmt(it.price) : '—'), cat ? (cat.icon + ' ' + (lang === 'en' ? cat.en : cat.bn)) : '', it.date || ''].filter(Boolean).join(' • ');
-    const boughtBadge = it.status === 'bought' ? '<span class="text-[11px] font-bold text-green-700">✓ ' + t('bought') + '</span>' : '';
+    const bought = it.status === 'bought';
+    const priceTxt = it.price ? fmt(it.price) : '৳0 (' + t('bzPricePending') + ')';
+    const meta = priceTxt + ' • ' + (it.date || '');
     /* All 4 buttons ALWAYS shown: No on a bought item undoes the Yes (removes its expense) */
-    const btns = '<button onclick="bazarEdit(\'' + it.id + '\')" class="px-3 py-2 rounded-full bg-[#E3F2FD] text-[13px] font-bold whitespace-nowrap">' + t('editBtn') + '</button>' +
-      '<button onclick="bazarNo(\'' + it.id + '\')" class="px-3 py-2 rounded-full bg-[#F3E8D3] text-[13px] font-bold whitespace-nowrap">' + t('noBtn') + '</button>' +
-      '<button onclick="bazarYes(\'' + it.id + '\')" class="px-3 py-2 rounded-full bg-[#EAF7EA] text-[13px] font-bold whitespace-nowrap">' + t('yesBtn') + '</button>' +
-      '<button onclick="bazarDelete(\'' + it.id + '\')" class="px-3 py-2 rounded-full bg-[#FDECEC] text-[13px] font-bold whitespace-nowrap">' + t('deleteBtn') + '</button>';
-    return '<div class="flex gap-2 items-center py-2.5 border-b border-[#F3E8D3]"><div class="flex-1" style="min-width:0"><div class="font-bold text-[14px]">' + it.text + '</div><div class="text-[12px] text-[#8B7355]">' + meta + '</div>' + boughtBadge + '</div><div class="flex gap-1 shrink-0 flex-nowrap">' + btns + '</div></div>';
+    const btns = '<button onclick="bazarEdit(\'' + it.id + '\')" class="px-3 py-2 rounded-full bg-white text-[13px] font-bold whitespace-nowrap">' + t('editBtn') + '</button>' +
+      '<button onclick="bazarNo(\'' + it.id + '\')" class="px-3 py-2 rounded-full text-[13px] font-bold whitespace-nowrap ' + (bought ? 'bg-white text-black' : 'bg-[#D32F2F] text-white') + '">' + t('noBtn') + '</button>' +
+      '<button onclick="bazarYes(\'' + it.id + '\')" class="px-3 py-2 rounded-full text-[13px] font-bold whitespace-nowrap ' + (bought ? 'bg-[#2E7D32] text-white' : 'bg-white text-green-700') + '">' + t('yesBtn') + '</button>' +
+      '<button onclick="bazarDelete(\'' + it.id + '\')" class="w-9 h-9 rounded-full bg-white text-[15px] font-bold shrink-0">🗑️</button>';
+    return '<div class="p-3 mb-2 rounded-[16px] bg-[#FDECEC]"><div class="flex gap-2 items-center"><div class="flex-1" style="min-width:0"><div class="font-bold text-[15px]">' + escA(it.text || '') + '</div><div class="text-[12px] text-[#8B7355]">' + meta + '</div></div><div class="flex gap-1 shrink-0 flex-nowrap items-center">' + btns + '</div></div></div>';
   }).join('');
+}
+function clearBzNote(){
+  const inp = document.getElementById('bzNoteInput');
+  if(inp) inp.value = '';
+}
+function renderBzQuickCats(){
+  const sel = document.getElementById('bzQuickCat');
+  if(!sel) return;
+  const cur = sel.value;
+  let opts = '<option value="">' + escA(t('bzCatPh')) + '</option>';
+  opts += EXPENSE_FLAT.map((it, j) => '<option value="' + j + '">' + escA((it.icon || '') + ' ' + (lang === 'en' ? it.en : it.bn)) + '</option>').join('');
+  sel.innerHTML = opts;
+  if(cur !== '' && cur !== null && EXPENSE_FLAT[+cur]) sel.value = cur;
+}
+function addBazarQuick(){
+  const nameEl = document.getElementById('bzQuickName');
+  const name = (nameEl ? nameEl.value : '').trim();
+  if(!name){ showToast(t('bzNeedName')); return; }
+  const priceEl = document.getElementById('bzQuickPrice');
+  const price = (priceEl && priceEl.value) ? +priceEl.value : null;
+  const dateEl = document.getElementById('bzQuickDate');
+  const date = (dateEl && dateEl.value) || today();
+  const catEl = document.getElementById('bzQuickCat');
+  const catIdx = (catEl && catEl.value !== '') ? +catEl.value : null;
+  bazar.unshift({ id: uid(), text: name, price: price, catIdx: catIdx, date: date, status: 'pending', updatedAt: new Date().toISOString() });
+  saveBazar();
+  if(nameEl) nameEl.value = '';
+  if(priceEl) priceEl.value = '';
+  if(dateEl) dateEl.value = today();
+  if(catEl) catEl.value = '';
+  showToast(t('saved'));
 }
 function setBzCatSearch(v){
   bzCatSearch = (v || '').trim();
@@ -2286,7 +2394,7 @@ function closePdfPreview(){
   document.getElementById('pdfOverlay').classList.add('hidden');
 }
 let pdfMode = 'history', pdfPrintHeader = '';
-function pdfDocHtml(){ return pdfMode === 'person' ? personPdfHtml() : pdfMode === 'loans' ? loansPdfHtml() : pdfMode === 'homeBank' ? homeBankPdfHtml() : pdfMode === 'reports' ? reportPdfHtml() : pdfStatementHtml(); }
+function pdfDocHtml(){ const _b = pdfMode === 'person' ? personPdfHtml() : pdfMode === 'loans' ? loansPdfHtml() : pdfMode === 'homeBank' ? homeBankPdfHtml() : pdfMode === 'reports' ? reportPdfHtml() : pdfStatementHtml(); return _b + sigPdfPreviewHtml(); }
 function pdfTextForMode(){
   if(pdfMode === 'person'){
     const arr = personKind === 'given' ? (state.peopleGiven || []) : (state.peopleTaken || []);
@@ -2625,6 +2733,28 @@ function pdfPersonSectionsJpegs(data){
     drawTable(sumCols, sumHeader, [[t('totalLbl') + ' ' + t('loanEntries'), fmt(sec.totalLoans)], [t('totalLbl') + ' ' + t('paymentsSec'), fmt(sec.totalPays)]], [{ text: t('overdueLbl'), span: 1, align: 'left' }, { text: fmt(sec.balance), span: 1, align: 'right' }], t('noData'));
     y += 8;
   }
+  try{
+    const _sg = getPdfSignature();
+    if(_sg){
+      const _sigH = 118;
+      if(y + _sigH > M + PAGE_H){ finishPage(); startPage(); }
+      let _sy = H - M - _sigH;
+      const _img = _sg.img;
+      if(_img && _img.complete && _img.naturalWidth > 0){
+        const _iw = 210, _ih = Math.min(62, Math.round(_iw * _img.naturalHeight / _img.naturalWidth));
+        ctx.drawImage(_img, W - M - 250 + (250 - _iw) / 2, _sy, _iw, _ih);
+        _sy += _ih + 4;
+      }
+      ctx.textAlign = 'right';
+      ctx.font = '700 13px system-ui, -apple-system, "Segoe UI", sans-serif';
+      ctx.fillStyle = '#000';
+      ctx.fillText(_sg.name, W - M, _sy + 13); _sy += 19;
+      ctx.font = '12px system-ui, -apple-system, "Segoe UI", sans-serif';
+      ctx.fillStyle = '#555';
+      ctx.fillText(_sg.date, W - M, _sy + 12);
+      ctx.textAlign = 'left';
+    }
+  }catch(_e){}
   finishPage();
   return jpegs;
 }
@@ -2927,6 +3057,40 @@ function pdfStatementJpegs(){
           const tx = c.align === 'left' ? x0 + CPADX : (c.align === 'right' ? x0 + w - CPADX : x0 + w / 2);
           for(let li = 0; li < lines.length; li++) ctx.fillText(lines[li], tx, tr.top + CPAD + li * CLH);
           idx += c.span;
+        }
+      }
+    }
+    if(p === pages.length - 1){
+      const _sg = getPdfSignature();
+      if(_sg){
+        const _sigH = 118;
+        const _drawSig = function(c2){
+          let _sy = H - M - _sigH;
+          const _img = _sg.img;
+          if(_img && _img.complete && _img.naturalWidth > 0){
+            const _iw = 210, _ih = Math.min(62, Math.round(_iw * _img.naturalHeight / _img.naturalWidth));
+            c2.drawImage(_img, W - M - 250 + (250 - _iw) / 2, _sy, _iw, _ih);
+            _sy += _ih + 4;
+          }
+          c2.textAlign = 'right';
+          c2.font = '700 13px system-ui, -apple-system, "Segoe UI", sans-serif';
+          c2.fillStyle = '#000';
+          c2.fillText(_sg.name, W - M, _sy + 13); _sy += 19;
+          c2.font = '12px system-ui, -apple-system, "Segoe UI", sans-serif';
+          c2.fillStyle = '#555';
+          c2.fillText(_sg.date, W - M, _sy + 12);
+          c2.textAlign = 'left';
+        };
+        if(y + _sigH <= H - M - 6){ _drawSig(ctx); }
+        else {
+          const _d0 = pc.toDataURL('image/jpeg', 0.92);
+          jpegs.push({ bytes: pdfB64ToBytes((_d0.split(',')[1] || '')), w: pc.width, h: pc.height });
+          const _pc2 = document.createElement('canvas'); _pc2.width = W * S; _pc2.height = H * S;
+          const _cx2 = _pc2.getContext('2d'); _cx2.scale(S, S); _cx2.fillStyle = '#fff'; _cx2.fillRect(0, 0, W, H);
+          _drawSig(_cx2);
+          const _d1 = _pc2.toDataURL('image/jpeg', 0.92);
+          jpegs.push({ bytes: pdfB64ToBytes((_d1.split(',')[1] || '')), w: _pc2.width, h: _pc2.height });
+          continue;
         }
       }
     }
@@ -4800,6 +4964,28 @@ function renderReportPages(o){
     font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total ('+all.length+' records)', cDate.x+15, y+38);
     ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(grand), cAmount.w-20), cAmount.x+cAmount.w-10, y+38); ctx.textAlign='left'; y+=th+20;
   }
+  try{
+    const _sg = getPdfSignature();
+    if(_sg){
+      const _sigH = 380;
+      if(y + _sigH > H - M - 60){ newPage(); }
+      let _sy = H - M - _sigH - 30;
+      const _img = _sg.img;
+      if(_img && _img.complete && _img.naturalWidth > 0){
+        const _iw = 560, _ih = Math.min(190, Math.round(_iw * _img.naturalHeight / _img.naturalWidth));
+        ctx.drawImage(_img, W - M - 640 + (640 - _iw) / 2, _sy, _iw, _ih);
+        _sy += _ih + 10;
+      }
+      ctx.textAlign = 'right';
+      ctx.font = '700 96px ' + PDF_FONT;
+      ctx.fillStyle = '#000000';
+      ctx.fillText(_sg.name, W - M, _sy + 96); _sy += 120;
+      ctx.font = '400 84px ' + PDF_FONT;
+      ctx.fillStyle = '#555555';
+      ctx.fillText(_sg.date, W - M, _sy + 84);
+      ctx.textAlign = 'left';
+    }
+  }catch(_e){}
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
   return pages;
 }
@@ -5196,6 +5382,28 @@ function renderPersonLoanPages(o){
     });
   }catch(e){ console.error('Summary table error', e); }
 
+  try{
+    const _sg = getPdfSignature();
+    if(_sg){
+      const _sigH = 380;
+      if(y + _sigH > H - M - 60){ newPage(); }
+      let _sy = H - M - _sigH - 30;
+      const _img = _sg.img;
+      if(_img && _img.complete && _img.naturalWidth > 0){
+        const _iw = 560, _ih = Math.min(190, Math.round(_iw * _img.naturalHeight / _img.naturalWidth));
+        ctx.drawImage(_img, W - M - 640 + (640 - _iw) / 2, _sy, _iw, _ih);
+        _sy += _ih + 10;
+      }
+      ctx.textAlign = 'right';
+      ctx.font = '700 96px ' + PDF_FONT;
+      ctx.fillStyle = '#000000';
+      ctx.fillText(_sg.name, W - M, _sy + 96); _sy += 120;
+      ctx.font = '400 84px ' + PDF_FONT;
+      ctx.fillStyle = '#555555';
+      ctx.fillText(_sg.date, W - M, _sy + 84);
+      ctx.textAlign = 'left';
+    }
+  }catch(_e){}
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
   return pages;
 }
@@ -5434,6 +5642,28 @@ function renderAllLoansPages(o){
     font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total ('+all.length+' records)', cDate.x+15, y+38);
     ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(grand), cAmt.w-20), cAmt.x+cAmt.w-10, y+38); ctx.textAlign='left'; y+=th+20;
   }
+  try{
+    const _sg = getPdfSignature();
+    if(_sg){
+      const _sigH = 380;
+      if(y + _sigH > H - M - 60){ newPage(); }
+      let _sy = H - M - _sigH - 30;
+      const _img = _sg.img;
+      if(_img && _img.complete && _img.naturalWidth > 0){
+        const _iw = 560, _ih = Math.min(190, Math.round(_iw * _img.naturalHeight / _img.naturalWidth));
+        ctx.drawImage(_img, W - M - 640 + (640 - _iw) / 2, _sy, _iw, _ih);
+        _sy += _ih + 10;
+      }
+      ctx.textAlign = 'right';
+      ctx.font = '700 96px ' + PDF_FONT;
+      ctx.fillStyle = '#000000';
+      ctx.fillText(_sg.name, W - M, _sy + 96); _sy += 120;
+      ctx.font = '400 84px ' + PDF_FONT;
+      ctx.fillStyle = '#555555';
+      ctx.fillText(_sg.date, W - M, _sy + 84);
+      ctx.textAlign = 'left';
+    }
+  }catch(_e){}
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
   return pages;
 }
@@ -5705,6 +5935,28 @@ function renderHistoryPages(o){
     font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total ('+list.length+' records)', cDate.x+15, y+38);
     ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(total), cAmt.w-20), cAmt.x+cAmt.w-10, y+38); ctx.textAlign='left'; y+=th+20;
   }
+  try{
+    const _sg = getPdfSignature();
+    if(_sg){
+      const _sigH = 380;
+      if(y + _sigH > H - M - 60){ newPage(); }
+      let _sy = H - M - _sigH - 30;
+      const _img = _sg.img;
+      if(_img && _img.complete && _img.naturalWidth > 0){
+        const _iw = 560, _ih = Math.min(190, Math.round(_iw * _img.naturalHeight / _img.naturalWidth));
+        ctx.drawImage(_img, W - M - 640 + (640 - _iw) / 2, _sy, _iw, _ih);
+        _sy += _ih + 10;
+      }
+      ctx.textAlign = 'right';
+      ctx.font = '700 96px ' + PDF_FONT;
+      ctx.fillStyle = '#000000';
+      ctx.fillText(_sg.name, W - M, _sy + 96); _sy += 120;
+      ctx.font = '400 84px ' + PDF_FONT;
+      ctx.fillStyle = '#555555';
+      ctx.fillText(_sg.date, W - M, _sy + 84);
+      ctx.textAlign = 'left';
+    }
+  }catch(_e){}
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
   return pages;
 }
@@ -7453,9 +7705,9 @@ function TravelManager({t, lang, setToast, onClose}){
                 g.items.map(it=>{
                   const sel=selected.includes(it.id);
                   return h('button', {key:it.id, onClick:()=>handleSelect(it.id), className:'flex items-center gap-3 p-3 py-3 rounded-[12px] border-2 text-left transition-colors mb-1 '+(sel ? 'bg-[#E8F5E9] border-[#2E7D32] text-[#1B4D3E]' : 'bg-[#FFEBEE] border-[#FFCDD2] text-[#B71C1C]')},
-                    h('div', {className:'w-[28px] h-[28px] rounded-[6px] flex items-center justify-center shrink-0 '+(sel ? 'bg-[#2E7D32]' : 'bg-[#B71C1C]')}, h('span', {className:'text-white text-[14px] font-bold'}, sel ? '✓' : '✕')),
+                    h('div', {className:'w-[24px] h-[24px] rounded-[6px] flex items-center justify-center shrink-0 '+(sel ? 'bg-[#2E7D32]' : 'bg-[#B71C1C]')}, h('span', {className:'text-white text-[12px] font-bold'}, sel ? '✓' : '✕')),
                     h('span', {className:'text-[18px]'}, it.icon),
-                    h('span', {className:'text-[12px] font-extrabold flex-1 leading-relaxed py-1'}, it.label)
+                    h('span', {className:'text-[14px] font-extrabold flex-1 leading-relaxed py-1'}, it.label)
                   );
                 }).concat(g.id==='others' ? [h('div', {key:'others-note-box', className:'mt-4 p-4 bg-[#FFF8E1] rounded-[14px] border-2 border-[#FFE082]'},
                   h('label', {className:'text-[14px] font-extrabold text-[#5D4037] mb-2 block'}, '📝 Write other travel items / notes'),
