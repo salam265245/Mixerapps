@@ -7,7 +7,7 @@
   <link rel="icon" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
   <meta name="theme-color" content="#E3F2FD">
-<title>Lifestyle</title>
+<title>꧁༺ লাইফস্টাইল ༻꧂</title>
 <script src="https://cdn.tailwindcss.com"></script>
 
 <style>
@@ -318,7 +318,7 @@ const T = {
     configLbl:'Firebase Config (JSON)', saveCloudBtn:'সেটিংস সেভ করো', cloudSyncNow:'Sync Now', cloudDownload:'Download',
     cloudDisconnect:'সংযোগ বিচ্ছিন্ন করো', cloudDisconnectConfirm:'Cloud সংযোগ মুছে ফেলবে? (ফোনের ডেটা থাকবে)',
     confirmAgain:'আরেকবার নিশ্চিত করো — এটা মুছে যাবে, আর ফিরে আসবে না',
-    appName:'লাইফস্টাইল',
+    appName:'꧁༺ লাইফস্টাইল ༻꧂',
     emailPh:'ইমেইল - your@email.com',
     passPh:'পাসওয়ার্ড - ৬+ অক্ষর',
     loginBtn:'লগইন',
@@ -385,7 +385,7 @@ const T = {
     configLbl:'Firebase Config (JSON)', saveCloudBtn:'Save Settings', cloudSyncNow:'Sync Now', cloudDownload:'Download',
     cloudDisconnect:'Disconnect', cloudDisconnectConfirm:'Remove cloud connection? (Phone data stays)',
     confirmAgain:'Confirm once more — this will be deleted and will not come back',
-    appName:'Lifestyle',
+    appName:'꧁༺ Lifestyle ༻꧂',
     emailPh:'Email - your@email.com',
     passPh:'Password - 6+ অক্ষর',
     loginBtn:'Login',
@@ -1090,9 +1090,9 @@ function render(){
       '<div class="flex items-start gap-3 cursor-pointer" style="position:sticky;top:0;z-index:20;background:#FFFBF7;margin:-16px -16px 0;padding:16px 16px 10px;border-bottom:1px solid #F3E8D3" onclick="navGo(\'profile\')">' +
         '<div class="w-12 h-12 rounded-full bg-[#F3E8D3] overflow-hidden flex items-center justify-center text-[22px]">' + (photo ? '<img src="' + photo + '" class="w-full h-full object-cover">' : '👤') + '</div>' +
         '<div class="flex-1"><div class="font-extrabold text-[20px] leading-tight text-[#8B7355]">' + t('appName') + '</div><div class="font-extrabold text-[20px] leading-tight">' + name + '</div>' +
-        (pDes ? '<div class="text-[13px] font-bold text-[#8B7355]">' + pDes + '</div>' : '') +
-        (pAddr ? '<div class="text-[13px] text-[#8B7355]">' + pAddr + '</div>' : '') +
-        (pMob ? '<div class="text-[13px] text-[#8B7355]">' + pMob + '</div>' : '') +
+        (pDes ? '<div class="text-[13px] font-bold text-black">' + pDes + '</div>' : '') +
+        (pAddr ? '<div class="text-[13px] text-black">' + pAddr + '</div>' : '') +
+        (pMob ? '<div class="text-[13px] text-black">' + pMob + '</div>' : '') +
         '</div>' +
         '<div class="flex flex-col items-end gap-2 shrink-0" onclick="event.stopPropagation()">' +
           '<div class="flex gap-2">' +
@@ -2055,7 +2055,7 @@ function bankLoanPdfText(loans, from, to){
   const d = bankLoanPdfDetails(loans);
   const prof = (typeof loadProfile === 'function' ? loadProfile() : {}) || {};
   const period = statementPeriod(from, to, (loans || []).map(e => ({ date: e.date || e.loanDate || '' })));
-  let out = 'Lifestyle\nDownload: ' + fmtDownloadNow() + '\nUser: ' + (prof.name || '') + '\nHistory - Bank Loan\nTotal Records: ' + d.items.length + '\nStatement Period: ' + period.from + ' – ' + period.to + '\n';
+  let out = t('appName') + '\nDownload: ' + fmtDownloadNow() + '\nUser: ' + (prof.name || '') + '\nHistory - Bank Loan\nTotal Records: ' + d.items.length + '\nStatement Period: ' + period.from + ' – ' + period.to + '\n';
   d.items.forEach(it => {
     out += '\n' + (it.bank || '') + '\n' +
       'Disbursement Date: ' + (fmtDMY(it.date) || '—') + '\n' +
@@ -2348,7 +2348,7 @@ function statementHeaderHtml(title, totalRecords, period, rightHtml){
   const line = (label, val) => val ? '<div style="font-size:12px;color:#333;line-height:1.5">' + label + ': ' + escA(String(val)) + '</div>' : '';
   return '<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">' +
     '<div style="flex:1;min-width:0">' +
-      '<div style="font-weight:800;font-size:20px;line-height:1.2">Lifestyle</div>' +
+      '<div style="font-weight:800;font-size:20px;line-height:1.2">' + t('appName') + '</div>' +
       '<div style="font-size:12px;color:#555;line-height:1.5">Download: ' + fmtDownloadNow() + '</div>' +
       line('User', prof.name) + line('Designation', prof.designation) + line('Address', prof.address) + line('Mobile', prof.mobile) +
     '</div>' +
@@ -2442,7 +2442,7 @@ function statementText(title, rows, fromISO, toISO){
   const period = statementPeriod(fromISO, toISO, rows);
   const prof = (typeof loadProfile === 'function' ? loadProfile() : {}) || {};
   const total = rows.reduce((s, r) => s + Math.abs(r.amount || 0), 0);
-  return 'Lifestyle\nDownload: ' + fmtDownloadNow() + '\nUser: ' + (prof.name || '') + '\n' + title + '\nTotal Records: ' + rows.length + '\nStatement Period: ' + period.from + ' – ' + period.to + '\n' +
+  return t('appName') + '\nDownload: ' + fmtDownloadNow() + '\nUser: ' + (prof.name || '') + '\n' + title + '\nTotal Records: ' + rows.length + '\nStatement Period: ' + period.from + ' – ' + period.to + '\n' +
     rows.map(r => fmtDMY(r.date) + ' | ' + (r.person || '') + ' | ' + (r.category || '') + ' | ' + (r.note || '') + ' | ' + (r.from || '') + ' | ' + (r.to || '') + ' | ' + fmt(Math.abs(r.amount || 0))).join('\n') +
     '\nTotal (' + rows.length + ' records): ' + fmt(total);
 }
@@ -2554,7 +2554,7 @@ function pdfTextForMode(){
     const period = statementPeriod(loansFrom, loansTo, []);
     const prof = (typeof loadProfile === 'function' ? loadProfile() : {}) || {};
     const tL = people.reduce((s, x) => s + x.loans, 0), tP = people.reduce((s, x) => s + x.pays, 0), tB = people.reduce((s, x) => s + x.balance, 0);
-    return 'Lifestyle\nDownload: ' + fmtDownloadNow() + '\nUser: ' + (prof.name || '') + '\nHistory - ' + loansPageTitle() + '\nTotal Records: ' + people.length + '\nStatement Period: ' + period.from + ' – ' + period.to + '\n' +
+    return t('appName') + '\nDownload: ' + fmtDownloadNow() + '\nUser: ' + (prof.name || '') + '\nHistory - ' + loansPageTitle() + '\nTotal Records: ' + people.length + '\nStatement Period: ' + period.from + ' – ' + period.to + '\n' +
       people.map(x => (x.person.name || '') + ' | ' + (x.person.mobile || '') + ' | Total: ' + fmt(x.loans) + ' | ' + (loansKind === 'given' ? 'Returned' : 'Repaid') + ': ' + fmt(x.pays) + ' | Balance: ' + fmt(x.balance)).join('\n') +
       '\nTotal (' + people.length + ' people): ' + fmt(tL) + ' • ' + fmt(tP) + ' • ' + fmt(tB);
   }
@@ -2726,7 +2726,7 @@ function pdfPersonSectionsJpegs(data){
   let pc = null, ctx = null, y = M;
   const drawPageHeader = () => {
     ctx.font = FT; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillStyle = '#000';
-    ctx.fillText('Lifestyle', M, y); y += 24;
+    ctx.fillText(t('appName'), M, y); y += 24;
     ctx.font = F; ctx.fillStyle = '#555';
     for(let ln of pdfWrapText(ctx, 'Download: ' + fmtDownloadNow(), LEFT_W)){ ctx.fillText(ln, M, y); y += LH; }
     ctx.fillStyle = '#333';
@@ -3003,7 +3003,7 @@ function pdfBankLoansJpegs(data){
   const drawHeader = (ctx) => {
     let y = M;
     ctx.font = FT; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillStyle = '#000';
-    ctx.fillText('Lifestyle', M, y); y += 24;
+    ctx.fillText(t('appName'), M, y); y += 24;
     ctx.font = F; ctx.fillStyle = '#555';
     pdfWrapText(ctx, 'Download: ' + fmtDownloadNow(), LEFT_W).forEach(ln => { ctx.fillText(ln, M, y); y += LH; });
     ctx.fillStyle = '#333';
@@ -3334,7 +3334,7 @@ function pdfStatementJpegs(){
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       ctx.fillStyle = '#000';
-      ctx.fillText('Lifestyle', M, y);
+      ctx.fillText(t('appName'), M, y);
       y += 24;
       ctx.font = F;
       ctx.fillStyle = '#555';
@@ -3502,9 +3502,9 @@ function sharePdf(){
   let file = null;
   try{ file = new File([blob], fname, { type: 'application/pdf' }); }catch(e){ file = null; }
   if(file && navigator.canShare && navigator.canShare({ files: [file] })){
-    navigator.share({ title: 'Lifestyle', text: 'Lifestyle - Statement', files: [file] }).catch(() => {});
+    navigator.share({ title: t('appName'), text: t('appName') + ' - Statement', files: [file] }).catch(() => {});
   } else if(navigator.share){
-    navigator.share({ title: 'Lifestyle', text: pdfTextForMode() }).catch(() => {});
+    navigator.share({ title: t('appName'), text: pdfTextForMode() }).catch(() => {});
   }
 }
 
@@ -3891,7 +3891,7 @@ function exportCsv(){
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => { try{ URL.revokeObjectURL(url); }catch(e){} }, 5000);
   }catch(e){
-    if(navigator.share){ navigator.share({ title: 'Lifestyle', text: csv }).catch(() => {}); }
+    if(navigator.share){ navigator.share({ title: t('appName'), text: csv }).catch(() => {}); }
   }
   showToast(t('csvSaved'));
 }
@@ -4112,7 +4112,7 @@ const INCOME_CATEGORIES = [
 ];
 
 const T = {
-  en: { appName:'Lifestyle', today:'Today', thisMonth:'This Month', todayIncome:"Today's Income",
+  en: { appName:'꧁༺ Lifestyle ༻꧂', today:'Today', thisMonth:'This Month', todayIncome:"Today's Income",
     todayExpense:"Today's Expense", todayBalance:"Today's Balance", monthlyIncome:'Monthly Income',
     monthlyExpense:'Monthly Expense', monthlyBalance:'Monthly Balance', loansReceivables:'Loans & Receivables',
     bankLoans:'Bank Loans', viewAll:'View all', totalGiven:'Total Given', totalReturned:'Returned',
@@ -4139,7 +4139,7 @@ const T = {
     dateFrom:'From', dateTo:'To', sharePdf:'Share PDF (WhatsApp)', downloadPdf:'Download PDF', preparing:'Preparing...',
     pdfDownloaded:'PDF downloaded', badRange:'Please select a valid date range',
     pickContact:'Pick from contacts', contactUnsupported:'Contact access is not available here. Please type the number.', todayBazar:'Today Bazar', bazar:'Bazar' },
-  bn: { appName:'লাইফস্টাইল', today:'আজ', thisMonth:'এই মাস', todayIncome:'আজকের আয়',
+  bn: { appName:'꧁༺ লাইফস্টাইল ༻꧂', today:'আজ', thisMonth:'এই মাস', todayIncome:'আজকের আয়',
     todayExpense:'আজকের ব্যয়', todayBalance:'আজকের ব্যালেন্স', monthlyIncome:'মাসিক আয়',
     monthlyExpense:'মাসিক ব্যয়', monthlyBalance:'মাসিক ব্যালেন্স', loansReceivables:'ঋণ ও পাওনা',
     bankLoans:'ব্যাংক লোন', viewAll:'সব দেখুন', totalGiven:'মোট প্রদান', totalReturned:'ফেরত পেয়েছি',
@@ -4880,7 +4880,7 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
             var genAt = new Date();
             var resolveName = (function(){ try{ var lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; if(typeof userName==='string' && userName.trim()) return userName; if(lsN) return lsN; if(typeof googleUser!=='undefined' && googleUser && (googleUser.name||googleUser.email)) return googleUser.name||googleUser.email; }catch(e){} return 'User'; })();
             var lsD = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation')) || ''; var lsA = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address')) || ''; var lsM = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile')) || '';
-            var opts = {t:t, lang:lang, person:person, kind:kind, userName: resolveName, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: (t.appName||'Lifestyle')};
+            var opts = {t:t, lang:lang, person:person, kind:kind, userName: resolveName, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: (t.appName||'꧁༺ Lifestyle ༻꧂')};
             var blob = (typeof buildPersonLoanPdfBlob==='function' ? buildPersonLoanPdfBlob(opts) : null);
             if(!blob) throw new Error('blob null');
             if(typeof downloadPdfBlob==='function') downloadPdfBlob(blob, (person.name||'person') + '-loan-history.pdf');
@@ -4892,7 +4892,7 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
             var genAt = new Date();
             var resolveName = (function(){ try{ var lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; if(typeof userName==='string' && userName.trim()) return userName; if(lsN) return lsN; if(typeof googleUser!=='undefined' && googleUser && (googleUser.name||googleUser.email)) return googleUser.name||googleUser.email; }catch(e){} return 'User'; })();
             var lsD = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation')) || ''; var lsA = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address')) || ''; var lsM = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile')) || '';
-            var opts = {t:t, lang:lang, person:person, kind:kind, userName: resolveName, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: (t.appName||'Lifestyle')};
+            var opts = {t:t, lang:lang, person:person, kind:kind, userName: resolveName, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: (t.appName||'꧁༺ Lifestyle ༻꧂')};
             try{
               if(typeof renderPersonLoanPages==='function' && typeof showPdfPreviewFromCanvases==='function'){
                 var pages=renderPersonLoanPages(opts);
@@ -4910,7 +4910,7 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
             var genAt = new Date();
             var resolveName = (function(){ try{ var lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; if(typeof userName==='string' && userName.trim()) return userName; if(lsN) return lsN; if(typeof googleUser!=='undefined' && googleUser && (googleUser.name||googleUser.email)) return googleUser.name||googleUser.email; }catch(e){} return 'User'; })();
             var lsD = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation')) || ''; var lsA = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address')) || ''; var lsM = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile')) || '';
-            var opts = {t:t, lang:lang, person:person, kind:kind, userName: resolveName, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: (t.appName||'Lifestyle')};
+            var opts = {t:t, lang:lang, person:person, kind:kind, userName: resolveName, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: (t.appName||'꧁༺ Lifestyle ༻꧂')};
             var blob = (typeof buildPersonLoanPdfBlob==='function' ? buildPersonLoanPdfBlob(opts) : null);
             if(!blob) throw new Error('blob null');
             if(typeof shareOrDownloadPdf==='function') await shareOrDownloadPdf(blob, (person.name||'person') + '-loan-history.pdf', (person.name||'person') + ' History');
@@ -5164,7 +5164,7 @@ function renderReportPages(o){
   function drawCellRect(x,w,h, fill){ if(fill){ ctx.fillStyle=fill; ctx.fillRect(x,y,w,h); } ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h); }
   function drawTopHeader(){
     const leftX = M; let ly = y;
-    font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || 'Lifestyle',800),leftX,ly); ly+=60; font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'ডাউনলোড: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44; font(26,false); profileLinesCache.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
+    font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || '꧁༺ Lifestyle ༻꧂',800),leftX,ly); ly+=60; font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'ডাউনলোড: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44; font(26,false); profileLinesCache.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
     let _maxDevW=0; const devBlockW=900;
     devLines.forEach(dl=>{ const _w=ctx.measureText(fit(dl,devBlockW)).width; if(_w>_maxDevW) _maxDevW=_w; });
     const devBlockX=W-M-_maxDevW; let ry=y;
@@ -5479,7 +5479,7 @@ function renderPersonLoanPages(o){
   function drawCellRect(x,w,h, fill){ if(fill){ ctx.fillStyle=fill; ctx.fillRect(x,y,w,h); } ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h); }
   function drawTopHeader(){
     const leftX = M; let ly = y;
-    font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || 'Lifestyle',800),leftX,ly); ly+=60; font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'ডাউনলোড: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44; font(26,false); profileLinesCache.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
+    font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || '꧁༺ Lifestyle ༻꧂',800),leftX,ly); ly+=60; font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'ডাউনলোড: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44; font(26,false); profileLinesCache.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
     let _maxDevW=0; const devBlockW=900;
     devLines.forEach(dl=>{ const _w=ctx.measureText(fit(dl,devBlockW)).width; if(_w>_maxDevW) _maxDevW=_w; });
     const devBlockX=W-M-_maxDevW; let ry=y;
@@ -5884,7 +5884,7 @@ function renderAllLoansPages(o){
   function drawCellRect(x,w,h, fill){ if(fill){ ctx.fillStyle=fill; ctx.fillRect(x,y,w,h); } ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h); }
   function drawTopHeader(){
     const leftX = M; let ly = y;
-    font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || 'Lifestyle',800),leftX,ly); ly+=60; font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'ডাউনলোড: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44; font(26,false); profileLinesCache.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
+    font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || '꧁༺ Lifestyle ༻꧂',800),leftX,ly); ly+=60; font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'ডাউনলোড: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44; font(26,false); profileLinesCache.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
     let _maxDevW=0; const devBlockW=900;
     devLines.forEach(dl=>{ const _w=ctx.measureText(fit(dl,devBlockW)).width; if(_w>_maxDevW) _maxDevW=_w; });
     const devBlockX=W-M-_maxDevW; let ry=y;
@@ -6150,7 +6150,7 @@ function renderHistoryPages(o){
   function drawCellRect(x,w,h, fill){ if(fill){ ctx.fillStyle=fill; ctx.fillRect(x,y,w,h); } ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h); }
   function drawTopHeader(){
     const leftX = M; let ly = y;
-    font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || 'Lifestyle',800),leftX,ly); ly+=60; font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'ডাউনলোড: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44; font(26,false); profileLinesCache.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
+    font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || '꧁༺ Lifestyle ༻꧂',800),leftX,ly); ly+=60; font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'ডাউনলোড: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44; font(26,false); profileLinesCache.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
     let _maxDevW=0; const devBlockW=900;
     devLines.forEach(dl=>{ const _w=ctx.measureText(fit(dl,devBlockW)).width; if(_w>_maxDevW) _maxDevW=_w; });
     const devBlockX=W-M-_maxDevW; let ry=y;
