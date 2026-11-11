@@ -1089,13 +1089,13 @@ function render(){
     '<div class="px-4 pt-4">' +
       '<div class="flex items-start gap-3 cursor-pointer" style="position:sticky;top:0;z-index:20;background:#FFFBF7;margin:-16px -16px 0;padding:16px 16px 10px;border-bottom:1px solid #F3E8D3" onclick="navGo(\'profile\')">' +
         '<div class="w-12 h-12 rounded-full bg-[#F3E8D3] overflow-hidden flex items-center justify-center text-[22px]">' + (photo ? '<img src="' + photo + '" class="w-full h-full object-cover">' : '👤') + '</div>' +
-        '<div class="flex-1"><div class="font-extrabold text-[20px] leading-tight text-[#8B7355]">' + t('appName') + '</div><div class="font-extrabold text-[20px] leading-tight">' + name + '</div>' +
+        '<div class="flex-1"><div class="font-extrabold ' + (lang==='bn' ? 'text-[17px] whitespace-nowrap' : 'text-[20px]') + ' leading-tight text-[#8B7355]">' + t('appName') + '</div><div class="font-extrabold text-[20px] leading-tight">' + name + '</div>' +
         (pDes ? '<div class="text-[13px] font-bold text-black">' + pDes + '</div>' : '') +
         (pAddr ? '<div class="text-[13px] text-black">' + pAddr + '</div>' : '') +
         (pMob ? '<div class="text-[13px] text-black">' + pMob + '</div>' : '') +
         '</div>' +
         '<div class="flex flex-col items-end gap-2 shrink-0" onclick="event.stopPropagation()">' +
-          '<div class="flex gap-2">' +
+          '<div class="flex gap-1">' +
             '<button onclick="setLang(\'en\')" class="px-3 py-1.5 rounded-full text-[12px] font-bold ' + (lang==='en' ? 'bg-[#2D2A26] text-white' : 'bg-white border border-[#F3E8D3]') + '">EN</button>' +
         '<button onclick="setLang(\'bn\')" class="px-3 py-1.5 rounded-full text-[12px] font-bold ' + (lang==='bn' ? 'bg-[#2D2A26] text-white' : 'bg-white border border-[#F3E8D3]') + '">BN</button>' +
           '</div>' +
