@@ -215,7 +215,7 @@
       <div class="flex gap-2">
         <div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="loanAmountLbl">Loan Amount</label>
         <input id="leBankAmount" oninput="renderBankEmiSheet()" type="number" inputmode="decimal" placeholder="0" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3"></div>
-        <div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="termLbl">Term (months)</label>
+        <div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="termLbl">Tenure (months)</label>
         <input id="leMonths" oninput="renderBankEmiSheet()" type="number" inputmode="numeric" placeholder="0" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3"></div>
       </div>
       <label class="text-[12px] font-bold text-[#8B7355]" data-t="rateLbl">Interest Rate %</label>
@@ -445,7 +445,7 @@ const T = {
     cloudSyncDone:'Synced ✅', cloudUploadDone:'Uploaded ✅', cloudDownloadDone:'Downloaded ✅',
     cloudSyncFail:'Sync failed — check internet / Config', cloudSaved:'Cloud settings saved',
     cloudCleared:'Cloud connection removed', cloudInvalidConfig:'Config looks wrong — check the JSON', cloudNoCode:'Enter a Sync Code',
-    cloudSetupTitle:'How to set up (once)', bazarTitle:'Today Bazar', bzTotal:'Total', bzBought:'Bought', bzRemaining:'Remaining', bzPasteTitle:'📋 Paste message', bzMakeList:'✨ Create List', bzClear:'Clear', bzPasteNote:'Comma, space or new line will auto-split into a list', bzItemName:'Item Name *', bzItemNamePh:'e.g. Potato', bzPriceOpt:'Price (optional)', bzPricePh:'0 - you can add later', bzCatOpt:'Expense Category (optional)', bzCatPh:'Select category (optional)', bzAddToList:'Add to List', bzPricePending:'Price pending', bzNeedName:'Write the item name first', bazarList:'Bazar List', bought:'Bought', notBought:'Not Bought', itemsLbl:'items', addNote:'Add Note', notePh:'e.g. Potato, Onion, Garlic or one per line', editBtn:'Edit', yesBtn:'Yes', noBtn:'No', deleteBtn:'Delete', priceLbl:'Price', needPriceCat:'Select price and category first', addedToExpense:'Added to expense', notBoughtYet:'Not bought yet', confirmDelete:'Delete this item?', allLbl:'All', buyTitle:'Bought — Save to Expense', editItemTitle:'Edit Item', itemLbl:'Item', emptyBazar:'Nothing here yet', boughtNote:'This item is already in expense — editing here changes only the bazar list', writeNote:'Write a note first', movedBack:'Moved back to Not Bought — expense removed',   fAll:'All', fIncome:'Income', fExpense:'Expense', fGiven:'Given', fTaken:'Taken', fReturn:'Return', fRepay:'Repayment', fBank:'Bank Loan', histSearchPh:'Search transactions…', addPerson:'Add Person', addReturn:'Add Return', addRepay:'Add Repayment', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'Date Clear', filterByCat:'Filter by Category', filtered:'Filtered', records:'records', noData:'No data yet', editIncome:'Edit Income', editExpense:'Edit Expense', confirmDeleteTx:'Delete this transaction?', deletedTx:'Transaction deleted', loanEntryTitle:'Edit Loan Entry', personCol:'Person', commentCol:'Comment', fromCol:'From', toCol:'To', amountCol:'Amount', totalIncome:'Total Income', totalExpense:'Total Expense', netBalance:'Net Balance', printPdf:'Print / Save PDF', pdfFail:'Could not make PDF. Please try again.', closeBtn:'Close', fromToSep:' to ', loansGivenPage:'Loans Given', loansTakenPage:'Loans Taken', bankLoansPage:'Bank Loans', searchPeople:'Search people…', peopleLbl:'people', entriesLbl:'entries', youWillGet:'You will get', youWillPay:'You will pay', loanEntries:'Loan Entries', paymentsSec:'Payments', summaryLbl:'Summary', overdueLbl:'Overdue', descLbl:'Description', dateLbl:'Date', noteLbl:'Note', addLoanBtn:'+ Add Loan', addPaymentBtn:'+ Add Payment', addBankLoanBtn:'+ Add Bank Loan', personName:'Person name', mobileNo:'Mobile number', selectPerson:'Select person', bankNameLbl:'Bank Name', saveLoan:'Save Loan', loanAmountLbl:'Loan Amount', termLbl:'Term (months)', disbursementLbl:'Disbursement Date', emiStartLbl:'EMI Start Date', emiEndLbl:'EMI End Date (auto)', selectBank:'Select bank', monthsLbl:'Months', rateLbl:'Interest Rate %', backBtn:'← Back', balanceLbl:'Balance', totalLbl:'Total', addLoanTitle:'Add Loan', addPersonLoanTitle:'+ Add Person', nameLbl:'Name', mobileContactLbl:'Mobile / Contact Number', fromChannelLbl:'From Channel', toChannelLbl:'To Channel', expectedReturnLbl:'Expected Return Date', newPersonNamePh:'New person name', typeManuallyPh:'Type manually or pick from contacts', newPerson:'New person', addPaymentTitle:'Add Payment', addPersonTitle:'Add Person', addBankLoanTitle:'Bank Loan', needName:'Enter a name', personAdded:'Person added', loanAdded:'Loan added', paymentAdded:'Payment added', bankLoanAdded:'Bank loan added', noPeople:'No people yet', editPersonTitle:'Edit Person', confirmDeletePerson:'Delete this person and all their entries?', personDeleted:'Person deleted', personUpdated:'Person updated', excelBtn:'⬇ Excel (CSV)', csvSaved:'Excel file downloaded', profileTitle:'My Profile', fullName:'Full Name', designation:'Designation / Title', addressLbl:'Address', mobileLbl:'Mobile Number', emailLbl:'Email', dobLbl:'Date of Birth', bloodLbl:'Blood Group', nidLbl:'NID Number', tapToEdit:'Tap name to edit profile', yourName:'Your Name', profileSaved:'Profile saved' }
+    cloudSetupTitle:'How to set up (once)', bazarTitle:'Today Bazar', bzTotal:'Total', bzBought:'Bought', bzRemaining:'Remaining', bzPasteTitle:'📋 Paste message', bzMakeList:'✨ Create List', bzClear:'Clear', bzPasteNote:'Comma, space or new line will auto-split into a list', bzItemName:'Item Name *', bzItemNamePh:'e.g. Potato', bzPriceOpt:'Price (optional)', bzPricePh:'0 - you can add later', bzCatOpt:'Expense Category (optional)', bzCatPh:'Select category (optional)', bzAddToList:'Add to List', bzPricePending:'Price pending', bzNeedName:'Write the item name first', bazarList:'Bazar List', bought:'Bought', notBought:'Not Bought', itemsLbl:'items', addNote:'Add Note', notePh:'e.g. Potato, Onion, Garlic or one per line', editBtn:'Edit', yesBtn:'Yes', noBtn:'No', deleteBtn:'Delete', priceLbl:'Price', needPriceCat:'Select price and category first', addedToExpense:'Added to expense', notBoughtYet:'Not bought yet', confirmDelete:'Delete this item?', allLbl:'All', buyTitle:'Bought — Save to Expense', editItemTitle:'Edit Item', itemLbl:'Item', emptyBazar:'Nothing here yet', boughtNote:'This item is already in expense — editing here changes only the bazar list', writeNote:'Write a note first', movedBack:'Moved back to Not Bought — expense removed',   fAll:'All', fIncome:'Income', fExpense:'Expense', fGiven:'Given', fTaken:'Taken', fReturn:'Return', fRepay:'Repayment', fBank:'Bank Loan', histSearchPh:'Search transactions…', addPerson:'Add Person', addReturn:'Add Return', addRepay:'Add Repayment', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'Date Clear', filterByCat:'Filter by Category', filtered:'Filtered', records:'records', noData:'No data yet', editIncome:'Edit Income', editExpense:'Edit Expense', confirmDeleteTx:'Delete this transaction?', deletedTx:'Transaction deleted', loanEntryTitle:'Edit Loan Entry', personCol:'Person', commentCol:'Comment', fromCol:'From', toCol:'To', amountCol:'Amount', totalIncome:'Total Income', totalExpense:'Total Expense', netBalance:'Net Balance', printPdf:'Print / Save PDF', pdfFail:'Could not make PDF. Please try again.', closeBtn:'Close', fromToSep:' to ', loansGivenPage:'Loans Given', loansTakenPage:'Loans Taken', bankLoansPage:'Bank Loans', searchPeople:'Search people…', peopleLbl:'people', entriesLbl:'entries', youWillGet:'You will get', youWillPay:'You will pay', loanEntries:'Loan Entries', paymentsSec:'Payments', summaryLbl:'Summary', overdueLbl:'Overdue', descLbl:'Description', dateLbl:'Date', noteLbl:'Note', addLoanBtn:'+ Add Loan', addPaymentBtn:'+ Add Payment', addBankLoanBtn:'+ Add Bank Loan', personName:'Person name', mobileNo:'Mobile number', selectPerson:'Select person', bankNameLbl:'Bank Name', saveLoan:'Save Loan', loanAmountLbl:'Loan Amount', termLbl:'Tenure (months)', disbursementLbl:'Disbursement Date', emiStartLbl:'EMI Start Date', emiEndLbl:'EMI End Date (auto)', selectBank:'Select bank', monthsLbl:'Months', rateLbl:'Interest Rate %', backBtn:'← Back', balanceLbl:'Balance', totalLbl:'Total', addLoanTitle:'Add Loan', addPersonLoanTitle:'+ Add Person', nameLbl:'Name', mobileContactLbl:'Mobile / Contact Number', fromChannelLbl:'From Channel', toChannelLbl:'To Channel', expectedReturnLbl:'Expected Return Date', newPersonNamePh:'New person name', typeManuallyPh:'Type manually or pick from contacts', newPerson:'New person', addPaymentTitle:'Add Payment', addPersonTitle:'Add Person', addBankLoanTitle:'Bank Loan', needName:'Enter a name', personAdded:'Person added', loanAdded:'Loan added', paymentAdded:'Payment added', bankLoanAdded:'Bank loan added', noPeople:'No people yet', editPersonTitle:'Edit Person', confirmDeletePerson:'Delete this person and all their entries?', personDeleted:'Person deleted', personUpdated:'Person updated', excelBtn:'⬇ Excel (CSV)', csvSaved:'Excel file downloaded', profileTitle:'My Profile', fullName:'Full Name', designation:'Designation / Title', addressLbl:'Address', mobileLbl:'Mobile Number', emailLbl:'Email', dobLbl:'Date of Birth', bloodLbl:'Blood Group', nidLbl:'NID Number', tapToEdit:'Tap name to edit profile', yourName:'Your Name', profileSaved:'Profile saved' }
 };
 let lang = loadLS('lifestyle_lang', 'bn');
 let state = { transactions: loadLS('lifestyle_transactions', []), peopleGiven: loadLS('lifestyle_people_given', []), peopleTaken: loadLS('lifestyle_people_taken', []), bankLoans: loadLS('lifestyle_bank_loans', []), recycle: loadLS('lifestyle_recycle', []) };
@@ -2012,13 +2012,13 @@ function bankLoanDetailHtml(loans){
   const d = bankLoanPdfDetails(loans);
   const cell = 'border:1px solid #ccc;padding:5px 6px;vertical-align:top;overflow-wrap:break-word';
   if(!d.items.length) return '<div style="font-size:12px;text-align:center;padding:10px">' + t('noData') + '</div>';
-  const row = (label, val) => '<tr style="page-break-inside:avoid"><td style="' + cell + ';width:45%">' + label + '</td><td style="' + cell + ';text-align:right;font-weight:700">' + val + '</td></tr>';
+  const row = (label, val) => '<tr style="page-break-inside:avoid"><td style="' + cell + ';width:40%">' + label + '</td><td style="' + cell + ';text-align:left;font-weight:700">' + val + '</td></tr>';
   const blocks = d.items.map(it => {
     const rows = [
       row('Disbursement Date', escA(fmtDMY(it.date) || '—')),
       row('Loan Amount', fmt(it.amount)),
       row('Interest Rate', (it.rate || 0) + '%'),
-      row('Term', (it.months || 0) + ' months'),
+      row('Tenure', (it.months || 0) + ' months'),
       row('EMI Start Date', escA(fmtDMY(it.emiStart) || '—')),
       row('EMI End Date (Maturity)', escA(fmtDMY(it.emiEnd) || '—')),
       row('Monthly EMI', fmt(it.emi)),
@@ -2061,7 +2061,7 @@ function bankLoanPdfText(loans, from, to){
       'Disbursement Date: ' + (fmtDMY(it.date) || '—') + '\n' +
       'Loan Amount: ' + fmt(it.amount) + '\n' +
       'Interest Rate: ' + (it.rate || 0) + '%\n' +
-      'Term: ' + (it.months || 0) + ' months\n' +
+      'Tenure: ' + (it.months || 0) + ' months\n' +
       'EMI Start Date: ' + (fmtDMY(it.emiStart) || '—') + '\n' +
       'EMI End Date (Maturity): ' + (fmtDMY(it.emiEnd) || '—') + '\n' +
       'Monthly EMI: ' + fmt(it.emi) + '\n' +
@@ -2936,7 +2936,7 @@ function pdfBankLoansJpegs(data){
   const titleLines = pdfWrapText(mctx, data.title, CW);
   const headerH = blockH + 20 + titleLines.length * LH + LH + LH + 10;
   const d = bankLoanPdfDetails(data.bankLoans);
-  const LW = Math.round(CW * 0.45), VW = CW - LW;
+  const LW = Math.round(CW * 0.40), VW = CW - LW;
   const rowH = (label, val) => {
     mctx.font = F;
     const ll = pdfWrapText(mctx, String(label), LW - 2 * CPADX).length;
@@ -2949,7 +2949,7 @@ function pdfBankLoansJpegs(data){
       ['Disbursement Date', fmtDMY(it.date) || '—'],
       ['Loan Amount', fmt(it.amount)],
       ['Interest Rate', (it.rate || 0) + '%'],
-      ['Term', (it.months || 0) + ' months'],
+      ['Tenure', (it.months || 0) + ' months'],
       ['EMI Start Date', fmtDMY(it.emiStart) || '—'],
       ['EMI End Date (Maturity)', fmtDMY(it.emiEnd) || '—'],
       ['Monthly EMI', fmt(it.emi)],
@@ -3039,8 +3039,8 @@ function pdfBankLoansJpegs(data){
       ctx.fillRect(M + LW, y, 1, hh);
       ctx.font = F; ctx.fillStyle = '#000'; ctx.textAlign = 'left';
       pdfWrapText(ctx, String(r[0]), LW - 2 * CPADX).forEach((ln, li) => { ctx.fillText(ln, M + CPADX, y + CPAD + li * CLH); });
-      ctx.font = FB; ctx.textAlign = 'right';
-      pdfWrapText(ctx, String(r[1]), VW - 2 * CPADX).forEach((ln, li) => { ctx.fillText(ln, M + LW + VW - CPADX, y + CPAD + li * CLH); });
+      ctx.font = FB; ctx.textAlign = 'left';
+      pdfWrapText(ctx, String(r[1]), VW - 2 * CPADX).forEach((ln, li) => { ctx.fillText(ln, M + LW + CPADX, y + CPAD + li * CLH); });
       y += hh;
     });
     ctx.fillStyle = '#ccc';
@@ -4131,7 +4131,7 @@ const T = {
     expense:'Expense', loansGiven:'Loans Given', loansTaken:'Loans Taken', selectCategory:'Select Category',
     saveLoan:'Save Loan', saveTransaction:'Save', deletePersonMsg:'Delete this person and all their records?',
     editLoan:'Edit Loan Entry', editPayment:'Edit Payment', addNewLoanEntry:'Add Loan Entry',
-    bankName:'Bank Name', loanAmount:'Loan Amount', termMonths:'Term (months)', interestRate:'Interest Rate %',
+    bankName:'Bank Name', loanAmount:'Loan Amount', termMonths:'Tenure (months)', interestRate:'Interest Rate %',
     loanDate:'Loan Date', emi:'EMI / month', close:'Close', method:'Method',
     disbursementDate:'Disbursement Date', emiStartDate:'EMI Start Date', emiEndDate:'EMI End Date (auto)',
     emiChecklist:'EMI Checklist', installment:'Installment', paidCountLabel:'EMIs Paid',
