@@ -1078,6 +1078,11 @@ function drawCanvasLogo(ctx, x, y){
   }
   return 0;
 }
+function logoHeaderH(){
+  const img = lang==='bn' ? LOGO_IMG_BN : LOGO_IMG_EN;
+  if(img && img.complete && img.naturalWidth) return Math.round(160 * img.naturalHeight / img.naturalWidth) + 4;
+  return 24;
+}
 function render(){
   document.title = t('appName');
   saveViewState();
@@ -2725,7 +2730,7 @@ function pdfPersonSectionsJpegs(data){
   const devLines = ['\u25a0 Developer', '\uD83D\uDC64 Md. Abdus Salam', '\uD83D\uDCCD Bantra, Kalaroa, Satkhira', '\uD83D\uDCDE Mobile: +8801737265245', '\u2709\uFE0F Email: salamwgp@gmail.com'];
   const RIGHT_W = 230, LEFT_W = CW - RIGHT_W;
   mctx.font = F;
-  let leftH = 24;
+  let leftH = logoHeaderH();
   const dlLines = pdfWrapText(mctx, 'Download: ' + fmtDownloadNow(), LEFT_W);
   leftH += dlLines.length * LH;
   for(let l of userLines){ leftH += pdfWrapText(mctx, l, LEFT_W).length * LH; }
@@ -2938,7 +2943,7 @@ function pdfBankLoansJpegs(data){
   const devLines = ['■ Developer', '👤 Md. Abdus Salam', '📍 Bantra, Kalaroa, Satkhira', '📞 Mobile: +8801737265245', '✉️ Email: salamwgp@gmail.com'];
   const RIGHT_W = 230, LEFT_W = CW - RIGHT_W;
   mctx.font = F;
-  let leftH = 24;
+  let leftH = logoHeaderH();
   leftH += pdfWrapText(mctx, 'Download: ' + fmtDownloadNow(), LEFT_W).length * LH;
   for(let l of userLines) leftH += pdfWrapText(mctx, l, LEFT_W).length * LH;
   let rightH = 0;
@@ -3285,7 +3290,7 @@ function pdfStatementJpegs(){
   const RIGHT_W = 230;
   const LEFT_W = CW - RIGHT_W;
   mctx.font = F;
-  let leftH = 24;
+  let leftH = logoHeaderH();
   const dlLines = pdfWrapText(mctx, 'Download: ' + fmtDownloadNow(), LEFT_W);
   leftH += dlLines.length * LH;
   for(let l of userLines){
