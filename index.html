@@ -1974,6 +1974,110 @@ function bankEmiSchedule(entry){
   }
   return rows;
 }
+function bankLoanPdfDetails(loans){
+  const items = (loans || []).map(e => {
+    const months = Math.floor(+((e.months || e.termMonths) || 0));
+    const amount = +(e.amount || 0);
+    const rate = +((e.rate || e.interestRate) || 0);
+    const emi = Math.round(calcEmi(amount, rate, months));
+    const paid = normalizeEmiPaid(e.emiPaid, months).filter(Boolean).length;
+    const remaining = Math.max(0, months - paid);
+    const totalPayable = emi * months;
+    const totalInterest = Math.max(0, totalPayable - amount);
+    const paidAmount = emi * paid;
+    const remainingAmount = emi * remaining;
+    const disb = e.date || e.loanDate || '';
+    const emiStart = e.emiStart || disb;
+    const emiEnd = e.emiEnd || (months > 0 ? addMonths(emiStart, months - 1) : '');
+    const nextDue = (months > 0 && paid < months) ? addMonths(emiStart, paid) : '';
+    const status = (months > 0 && paid >= months) ? 'Completed' : 'Running';
+    return { bank: e.bank || e.name || e.bankName || '', amount: amount, rate: rate, months: months, date: disb, emiStart: emiStart, emiEnd: emiEnd, emi: emi, paid: paid, remaining: remaining, totalPayable: totalPayable, totalInterest: totalInterest, paidAmount: paidAmount, remainingAmount: remainingAmount, nextDue: nextDue, status: status, note: e.note || '' };
+  });
+  const tot = { count: items.length, amount: 0, paidAmount: 0, remainingAmount: 0, totalPayable: 0, totalInterest: 0, paidCount: 0, remainingCount: 0 };
+  items.forEach(x => { tot.amount += x.amount; tot.paidAmount += x.paidAmount; tot.remainingAmount += x.remainingAmount; tot.totalPayable += x.totalPayable; tot.totalInterest += x.totalInterest; tot.paidCount += x.paid; tot.remainingCount += x.remaining; });
+  return { items: items, totals: tot };
+}
+function bankLoansInRange(loans, from, to){
+  return (loans || []).filter(e => {
+    const d = normDate(e.date || e.loanDate || '');
+    if(from && d < from) return false;
+    if(to && d > to) return false;
+    return true;
+  });
+}
+function historyBankLoans(){
+  return filteredHistoryRows().filter(r => r.kind === 'bank').map(r => (state.bankLoans || [])[r.entryIdx]).filter(Boolean);
+}
+function bankLoanDetailHtml(loans){
+  const d = bankLoanPdfDetails(loans);
+  const cell = 'border:1px solid #ccc;padding:5px 6px;vertical-align:top;overflow-wrap:break-word';
+  if(!d.items.length) return '<div style="font-size:12px;text-align:center;padding:10px">' + t('noData') + '</div>';
+  const row = (label, val) => '<tr style="page-break-inside:avoid"><td style="' + cell + ';width:45%">' + label + '</td><td style="' + cell + ';text-align:right;font-weight:700">' + val + '</td></tr>';
+  const blocks = d.items.map(it => {
+    const rows = [
+      row('Disbursement Date', escA(fmtDMY(it.date) || '—')),
+      row('Loan Amount', fmt(it.amount)),
+      row('Interest Rate', (it.rate || 0) + '%'),
+      row('Term', (it.months || 0) + ' months'),
+      row('EMI Start Date', escA(fmtDMY(it.emiStart) || '—')),
+      row('EMI End Date (Maturity)', escA(fmtDMY(it.emiEnd) || '—')),
+      row('Monthly EMI', fmt(it.emi)),
+      row('Installments Paid', it.paid + ' / ' + it.months),
+      row('Installments Remaining', it.remaining + ' / ' + it.months),
+      row('Total Payable', fmt(it.totalPayable)),
+      row('Total Interest', fmt(it.totalInterest)),
+      row('Paid Amount', fmt(it.paidAmount)),
+      row('Remaining Amount', fmt(it.remainingAmount)),
+      row('Next Due Date', escA(fmtDMY(it.nextDue) || '—')),
+      row('Status', it.status)
+    ];
+    if(it.note) rows.splice(1, 0, row('Note', escA(it.note)));
+    return '<div style="page-break-inside:avoid;margin-bottom:14px">' +
+      '<div style="background:#F5EEDD;border:1px solid #ccc;padding:6px;font-weight:800;font-size:14px">🏦 ' + escA(it.bank || '') + '</div>' +
+      '<table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed"><tbody>' + rows.join('') + '</tbody></table></div>';
+  }).join('');
+  const tot = d.totals;
+  const sumRows = [
+    row('Total Loans', tot.count),
+    row('Total Loan Amount', fmt(tot.amount)),
+    row('Total Installments Paid', tot.paidCount),
+    row('Total Installments Remaining', tot.remainingCount),
+    row('Total Paid Amount', fmt(tot.paidAmount)),
+    row('Total Remaining Amount', fmt(tot.remainingAmount)),
+    row('Total Payable', fmt(tot.totalPayable)),
+    row('Total Interest', fmt(tot.totalInterest))
+  ];
+  return blocks + '<div style="page-break-inside:avoid">' +
+    '<div style="background:#F5EEDD;border:1px solid #ccc;padding:6px;font-weight:800;font-size:14px">Summary</div>' +
+    '<table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed"><tbody>' + sumRows.join('') + '</tbody></table></div>';
+}
+function bankLoanPdfText(loans, from, to){
+  const d = bankLoanPdfDetails(loans);
+  const prof = (typeof loadProfile === 'function' ? loadProfile() : {}) || {};
+  const period = statementPeriod(from, to, (loans || []).map(e => ({ date: e.date || e.loanDate || '' })));
+  let out = 'Lifestyle\nDownload: ' + fmtDownloadNow() + '\nUser: ' + (prof.name || '') + '\nHistory - Bank Loan\nTotal Records: ' + d.items.length + '\nStatement Period: ' + period.from + ' – ' + period.to + '\n';
+  d.items.forEach(it => {
+    out += '\n' + (it.bank || '') + '\n' +
+      'Disbursement Date: ' + (fmtDMY(it.date) || '—') + '\n' +
+      'Loan Amount: ' + fmt(it.amount) + '\n' +
+      'Interest Rate: ' + (it.rate || 0) + '%\n' +
+      'Term: ' + (it.months || 0) + ' months\n' +
+      'EMI Start Date: ' + (fmtDMY(it.emiStart) || '—') + '\n' +
+      'EMI End Date (Maturity): ' + (fmtDMY(it.emiEnd) || '—') + '\n' +
+      'Monthly EMI: ' + fmt(it.emi) + '\n' +
+      'Installments Paid: ' + it.paid + ' / ' + it.months + '\n' +
+      'Installments Remaining: ' + it.remaining + ' / ' + it.months + '\n' +
+      'Total Payable: ' + fmt(it.totalPayable) + '\n' +
+      'Total Interest: ' + fmt(it.totalInterest) + '\n' +
+      'Paid Amount: ' + fmt(it.paidAmount) + '\n' +
+      'Remaining Amount: ' + fmt(it.remainingAmount) + '\n' +
+      'Next Due Date: ' + (fmtDMY(it.nextDue) || '—') + '\n' +
+      'Status: ' + it.status + '\n';
+  });
+  const tot = d.totals;
+  out += '\nSummary\nTotal Loans: ' + tot.count + '\nTotal Loan Amount: ' + fmt(tot.amount) + '\nTotal Installments Paid: ' + tot.paidCount + '\nTotal Installments Remaining: ' + tot.remainingCount + '\nTotal Paid Amount: ' + fmt(tot.paidAmount) + '\nTotal Remaining Amount: ' + fmt(tot.remainingAmount) + '\nTotal Payable: ' + fmt(tot.totalPayable) + '\nTotal Interest: ' + fmt(tot.totalInterest);
+  return out;
+}
 function emiTableHtml(entry, toggleFn){
   const rows = bankEmiSchedule(entry);
   if(!rows.length) return { html: '<div class="text-[12px] text-[#8B7355] text-center py-3">—</div>', paid: 0, total: 0 };
@@ -2102,9 +2206,9 @@ function homeBankLoansHtml(){
     (cards || '<div class="text-center text-[13px] text-[#8B7355] py-4">' + t('noData') + '</div>');
 }
 function homeBankPdfHtml(){
-  const rows = homeBankLoansFiltered().map(e => ({ date: e.date || '', person: '', category: 'Bank Loan', note: (e.bank || e.name || '') + (e.note ? ' • ' + e.note : ''), from: e.medium || '', to: e.medium || '', amount: +(e.amount || 0) }));
-  const period = statementPeriod(homeBankFrom, homeBankTo, rows);
-  return statementHeaderHtml('History - Bank Loan', rows.length, period) + statementEntriesTable(rows, 'noCategory');
+  const loans = homeBankLoansFiltered();
+  const period = statementPeriod(homeBankFrom, homeBankTo, loans.map(e => ({ date: e.date || e.loanDate || '' })));
+  return statementHeaderHtml('History - Bank Loan', loans.length, period) + bankLoanDetailHtml(loans);
 }
 function openHomeBankPdf(){ pdfMode = 'homeBank'; showStatementPreview(homeBankPdfHtml()); }
 function downloadHomeBankPdf(){ pdfMode = 'homeBank'; downloadPdfFile(); }
@@ -2343,6 +2447,11 @@ function statementText(title, rows, fromISO, toISO){
     '\nTotal (' + rows.length + ' records): ' + fmt(total);
 }
 function pdfStatementHtml(){
+  if(histFilter === 'bank'){
+    const loans = historyBankLoans();
+    const period = statementPeriod(histFrom, histTo, loans.map(e => ({ date: e.date || e.loanDate || '' })));
+    return statementHeaderHtml('History - Bank Loan', loans.length, period) + bankLoanDetailHtml(loans);
+  }
   const rows = pdfStatementRows().map(r => ({ date: r.date, person: r.person, category: r.category, note: r.comment, from: r.from, to: r.to, amount: r.amount }));
   const period = statementPeriod(histFrom, histTo, rows);
   return statementHeaderHtml('History - ' + statementFilterName(), rows.length, period) + statementEntriesTable(rows, pdfColsMode());
@@ -2435,13 +2544,11 @@ function pdfTextForMode(){
     return statementText('History - ' + (person.name || ''), personStatementRows(), personFrom, personTo);
   }
   if(pdfMode === 'homeBank'){
-    const rows = homeBankLoansFiltered().map(e => ({ date: e.date || '', person: '', category: 'Bank Loan', note: (e.bank || e.name || '') + (e.note ? ' • ' + e.note : ''), from: e.medium || '', to: e.medium || '', amount: +(e.amount || 0) }));
-    return statementText('History - Bank Loan', rows, homeBankFrom, homeBankTo);
+    return bankLoanPdfText(homeBankLoansFiltered(), homeBankFrom, homeBankTo);
   }
   if(pdfMode === 'loans'){
     if(loansKind === 'bank'){
-      const rows = (state.bankLoans || []).map(e => ({ date: e.date || '', person: '', category: 'Bank Loan', note: (e.bank || e.name || '') + (e.note ? ' • ' + e.note : ''), from: e.medium || '', to: e.medium || '', amount: +(e.amount || 0) }));
-      return statementText('History - Bank Loan', rows, loansFrom, loansTo);
+      return bankLoanPdfText(bankLoansInRange(state.bankLoans, loansFrom, loansTo), loansFrom, loansTo);
     }
     const people = loansPeopleFiltered();
     const period = statementPeriod(loansFrom, loansTo, []);
@@ -2451,6 +2558,7 @@ function pdfTextForMode(){
       people.map(x => (x.person.name || '') + ' | ' + (x.person.mobile || '') + ' | Total: ' + fmt(x.loans) + ' | ' + (loansKind === 'given' ? 'Returned' : 'Repaid') + ': ' + fmt(x.pays) + ' | Balance: ' + fmt(x.balance)).join('\n') +
       '\nTotal (' + people.length + ' people): ' + fmt(tL) + ' • ' + fmt(tP) + ' • ' + fmt(tB);
   }
+  if(histFilter === 'bank') return bankLoanPdfText(historyBankLoans(), histFrom, histTo);
   const rows = pdfStatementRows().map(r => ({ date: r.date, person: r.person, category: r.category, note: r.comment, from: r.from, to: r.to, amount: r.amount }));
   return statementText('History - ' + statementFilterName(), rows, histFrom, histTo);
 }
@@ -2524,6 +2632,10 @@ function pdfColsMode(){
 function pdfStatementData(){
   const prof = (typeof loadProfile === 'function' ? loadProfile() : {}) || {};
   if(pdfMode === 'history'){
+    if(histFilter === 'bank'){
+      const loans = historyBankLoans();
+      return { prof: prof, title: 'History - Bank Loan', records: loans.length, period: statementPeriod(histFrom, histTo, loans.map(e => ({ date: e.date || e.loanDate || '' }))), bankLoans: loans };
+    }
     const rows = pdfStatementRows().map(r => ({ date: r.date, person: r.person, category: r.category, note: r.comment, from: r.from, to: r.to, amount: r.amount }));
     return { prof: prof, title: 'History - ' + statementFilterName(), records: rows.length, period: statementPeriod(histFrom, histTo, rows), entriesRows: rows, colsMode: pdfColsMode() };
   }
@@ -2536,8 +2648,8 @@ function pdfStatementData(){
   }
   if(pdfMode === 'loans'){
     if(loansKind === 'bank'){
-      const rows = (state.bankLoans || []).map(e => ({ date: e.date || '', person: '', category: 'Bank Loan', note: (e.bank || e.name || '') + (e.note ? ' \u2022 ' + e.note : ''), from: e.medium || '', to: e.medium || '', amount: +(e.amount || 0) }));
-      return { prof: prof, title: 'History - Bank Loan', records: rows.length, period: statementPeriod(loansFrom, loansTo, rows), entriesRows: rows, colsMode: 'noCategory' };
+      const loans = bankLoansInRange(state.bankLoans, loansFrom, loansTo);
+      return { prof: prof, title: 'History - Bank Loan', records: loans.length, period: statementPeriod(loansFrom, loansTo, loans.map(e => ({ date: e.date || e.loanDate || '' }))), bankLoans: loans };
     }
     const people = loansPeopleFiltered();
     const secs = people.map(x => personSectionData(x.person, loansKind, loansFrom, loansTo));
@@ -2549,8 +2661,8 @@ function pdfStatementData(){
     return { prof: prof, title: 'Reports', records: rows.length, period: statementPeriod(r.from, r.to, rows), entriesRows: rows, colsMode: 'noPerson' };
   }
   if(pdfMode === 'homeBank'){
-    const rows = homeBankLoansFiltered().map(e => ({ date: e.date || '', person: '', category: 'Bank Loan', note: (e.bank || e.name || '') + (e.note ? ' \u2022 ' + e.note : ''), from: e.medium || '', to: e.medium || '', amount: +(e.amount || 0) }));
-    return { prof: prof, title: 'History - Bank Loan', records: rows.length, period: statementPeriod(homeBankFrom, homeBankTo, rows), entriesRows: rows, colsMode: 'noCategory' };
+    const loans = homeBankLoansFiltered();
+    return { prof: prof, title: 'History - Bank Loan', records: loans.length, period: statementPeriod(homeBankFrom, homeBankTo, loans.map(e => ({ date: e.date || e.loanDate || '' }))), bankLoans: loans };
   }
   return null;
 }
@@ -2796,10 +2908,220 @@ function pdfPersonSectionsJpegs(data){
   finishPage();
   return jpegs;
 }
+function pdfBankLoansJpegs(data){
+  const S = 2, W = 794, H = 1123, M = 24, CW = W - 2 * M, PAGE_H = H - 2 * M;
+  const F = '12px system-ui, -apple-system, "Segoe UI", sans-serif';
+  const FB = '700 12px system-ui, -apple-system, "Segoe UI", sans-serif';
+  const FT = '800 20px system-ui, -apple-system, "Segoe UI", sans-serif';
+  const FS = '700 15px system-ui, -apple-system, "Segoe UI", sans-serif';
+  const FB14 = '800 14px system-ui, -apple-system, "Segoe UI", sans-serif';
+  const LH = 18, CLH = 15, CPAD = 5, CPADX = 6;
+  const mctx = document.createElement('canvas').getContext('2d');
+  const prof = data.prof || {};
+  const userLines = [];
+  if(prof.name) userLines.push('User: ' + prof.name);
+  if(prof.designation) userLines.push('Designation: ' + prof.designation);
+  if(prof.address) userLines.push('Address: ' + prof.address);
+  if(prof.mobile) userLines.push('Mobile: ' + prof.mobile);
+  const devLines = ['■ Developer', '👤 Md. Abdus Salam', '📍 Bantra, Kalaroa, Satkhira', '📞 Mobile: +8801737265245', '✉️ Email: salamwgp@gmail.com'];
+  const RIGHT_W = 230, LEFT_W = CW - RIGHT_W;
+  mctx.font = F;
+  let leftH = 24;
+  leftH += pdfWrapText(mctx, 'Download: ' + fmtDownloadNow(), LEFT_W).length * LH;
+  for(let l of userLines) leftH += pdfWrapText(mctx, l, LEFT_W).length * LH;
+  let rightH = 0;
+  for(let l of devLines) rightH += pdfWrapText(mctx, l, RIGHT_W).length * LH;
+  const blockH = Math.max(leftH, rightH);
+  mctx.font = FS;
+  const titleLines = pdfWrapText(mctx, data.title, CW);
+  const headerH = blockH + 20 + titleLines.length * LH + LH + LH + 10;
+  const d = bankLoanPdfDetails(data.bankLoans);
+  const LW = Math.round(CW * 0.45), VW = CW - LW;
+  const rowH = (label, val) => {
+    mctx.font = F;
+    const ll = pdfWrapText(mctx, String(label), LW - 2 * CPADX).length;
+    mctx.font = FB;
+    const vl = pdfWrapText(mctx, String(val), VW - 2 * CPADX).length;
+    return 2 * CPAD + Math.max(ll, vl) * CLH;
+  };
+  const loanRows = (it) => {
+    const rows = [
+      ['Disbursement Date', fmtDMY(it.date) || '—'],
+      ['Loan Amount', fmt(it.amount)],
+      ['Interest Rate', (it.rate || 0) + '%'],
+      ['Term', (it.months || 0) + ' months'],
+      ['EMI Start Date', fmtDMY(it.emiStart) || '—'],
+      ['EMI End Date (Maturity)', fmtDMY(it.emiEnd) || '—'],
+      ['Monthly EMI', fmt(it.emi)],
+      ['Installments Paid', it.paid + ' / ' + it.months],
+      ['Installments Remaining', it.remaining + ' / ' + it.months],
+      ['Total Payable', fmt(it.totalPayable)],
+      ['Total Interest', fmt(it.totalInterest)],
+      ['Paid Amount', fmt(it.paidAmount)],
+      ['Remaining Amount', fmt(it.remainingAmount)],
+      ['Next Due Date', fmtDMY(it.nextDue) || '—'],
+      ['Status', it.status]
+    ];
+    if(it.note) rows.splice(1, 0, ['Note', it.note]);
+    return rows;
+  };
+  const blocks = [];
+  d.items.forEach(it => {
+    const rows = loanRows(it);
+    let hh = 26;
+    rows.forEach(r => { hh += rowH(r[0], r[1]); });
+    blocks.push({ heading: '🏦 ' + (it.bank || ''), rows: rows, h: hh });
+  });
+  if(d.items.length){
+    const tot = d.totals;
+    const sumRows = [
+      ['Total Loans', String(tot.count)],
+      ['Total Loan Amount', fmt(tot.amount)],
+      ['Total Installments Paid', String(tot.paidCount)],
+      ['Total Installments Remaining', String(tot.remainingCount)],
+      ['Total Paid Amount', fmt(tot.paidAmount)],
+      ['Total Remaining Amount', fmt(tot.remainingAmount)],
+      ['Total Payable', fmt(tot.totalPayable)],
+      ['Total Interest', fmt(tot.totalInterest)]
+    ];
+    let hh = 26;
+    sumRows.forEach(r => { hh += rowH(r[0], r[1]); });
+    blocks.push({ heading: 'Summary', rows: sumRows, h: hh });
+  }
+  const pages = [];
+  if(!d.items.length){ pages.push([]); }
+  else {
+    let cur = [], used = 0;
+    const avail = PAGE_H - headerH;
+    blocks.forEach(b => {
+      if(cur.length && used + 12 + b.h > avail){ pages.push(cur); cur = []; used = 0; }
+      if(cur.length) used += 12;
+      cur.push(b); used += b.h;
+    });
+    if(cur.length) pages.push(cur);
+  }
+  const drawHeader = (ctx) => {
+    let y = M;
+    ctx.font = FT; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillStyle = '#000';
+    ctx.fillText('Lifestyle', M, y); y += 24;
+    ctx.font = F; ctx.fillStyle = '#555';
+    pdfWrapText(ctx, 'Download: ' + fmtDownloadNow(), LEFT_W).forEach(ln => { ctx.fillText(ln, M, y); y += LH; });
+    ctx.fillStyle = '#333';
+    userLines.forEach(l => { pdfWrapText(ctx, l, LEFT_W).forEach(ln => { ctx.fillText(ln, M, y); y += LH; }); });
+    let ry = M; ctx.textAlign = 'right';
+    devLines.forEach((dl, i) => {
+      ctx.font = i === 0 ? FB : F; ctx.fillStyle = '#333';
+      pdfWrapText(ctx, dl, RIGHT_W).forEach(ln => { ctx.fillText(ln, W - M, ry); ry += LH; });
+    });
+    ctx.textAlign = 'left';
+    const divY = M + blockH + 10;
+    ctx.fillStyle = '#222';
+    ctx.fillRect(M, divY, CW, 1.5);
+    y = divY + 1.5 + 8;
+    ctx.font = FS; ctx.fillStyle = '#000';
+    titleLines.forEach(ln => { ctx.fillText(ln, M, y); y += LH; });
+    ctx.font = F; ctx.fillStyle = '#555';
+    ctx.fillText('Total Records: ' + data.records, M, y); y += LH;
+    ctx.fillText('Statement Period: ' + data.period.from + ' – ' + data.period.to, M, y); y += LH + 10;
+    return y;
+  };
+  const drawBlock = (ctx, y, b) => {
+    const top = y;
+    ctx.fillStyle = '#F5EEDD';
+    ctx.fillRect(M, y, CW, 26);
+    ctx.font = FB14; ctx.fillStyle = '#000'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(b.heading, M + CPADX, y + 5);
+    y += 26;
+    b.rows.forEach(r => {
+      const hh = rowH(r[0], r[1]);
+      ctx.fillStyle = '#ccc';
+      ctx.fillRect(M, y, CW, 1);
+      ctx.fillRect(M + LW, y, 1, hh);
+      ctx.font = F; ctx.fillStyle = '#000'; ctx.textAlign = 'left';
+      pdfWrapText(ctx, String(r[0]), LW - 2 * CPADX).forEach((ln, li) => { ctx.fillText(ln, M + CPADX, y + CPAD + li * CLH); });
+      ctx.font = FB; ctx.textAlign = 'right';
+      pdfWrapText(ctx, String(r[1]), VW - 2 * CPADX).forEach((ln, li) => { ctx.fillText(ln, M + LW + VW - CPADX, y + CPAD + li * CLH); });
+      y += hh;
+    });
+    ctx.fillStyle = '#ccc';
+    ctx.fillRect(M, y, CW, 1);
+    ctx.fillRect(M, top, 1, y - top);
+    ctx.fillRect(M + CW, top, 1, y - top);
+    return y;
+  };
+  const drawSig = (c2) => {
+    const _sg = getPdfSignature();
+    if(!_sg) return;
+    const _sigH = 118;
+    let _sy = H - M - _sigH;
+    const _img = _sg.img;
+    const _R = W - M;
+    c2.font = '700 13px system-ui, -apple-system, "Segoe UI", sans-serif';
+    const _nameW = c2.measureText(_sg.name).width;
+    if(_img && _img.complete && _img.naturalWidth > 0){
+      const _iw = 130, _ih = Math.min(62, Math.round(_iw * _img.naturalHeight / _img.naturalWidth));
+      let _ix = _R - _nameW / 2 - _iw / 2;
+      _ix = Math.max(M, Math.min(W - _iw, _ix));
+      c2.drawImage(_img, _ix, _sy, _iw, _ih);
+      _sy += _ih + 4;
+    }
+    c2.textAlign = 'right';
+    c2.font = '700 13px system-ui, -apple-system, "Segoe UI", sans-serif';
+    c2.fillStyle = '#000';
+    c2.fillText(_sg.name, _R, _sy + 13); _sy += 19;
+    c2.font = '12px system-ui, -apple-system, "Segoe UI", sans-serif';
+    c2.fillStyle = '#555';
+    c2.fillText(_sg.date, _R, _sy + 12);
+    c2.textAlign = 'left';
+  };
+  const jpegs = [];
+  for(let p = 0; p < pages.length; p++){
+    const pc = document.createElement('canvas');
+    pc.width = W * S; pc.height = H * S;
+    const ctx = pc.getContext('2d');
+    ctx.scale(S, S);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, W, H);
+    let y = drawHeader(ctx);
+    if(!d.items.length){
+      ctx.font = F; ctx.fillStyle = '#000'; ctx.textAlign = 'center';
+      ctx.fillText(t('noData'), M + CW / 2, y + 10);
+      ctx.textAlign = 'left';
+      y += 30;
+    } else {
+      pages[p].forEach((b, bi) => {
+        if(bi > 0) y += 12;
+        y = drawBlock(ctx, y, b);
+      });
+    }
+    if(p === pages.length - 1){
+      const _sg = getPdfSignature();
+      if(_sg){
+        const _sigH = 118;
+        if(y + _sigH <= H - M - 6){ drawSig(ctx); }
+        else {
+          const _d0 = pc.toDataURL('image/jpeg', 0.92);
+          jpegs.push({ bytes: pdfB64ToBytes((_d0.split(',')[1] || '')), w: pc.width, h: pc.height });
+          const _pc2 = document.createElement('canvas'); _pc2.width = W * S; _pc2.height = H * S;
+          const _cx2 = _pc2.getContext('2d'); _cx2.scale(S, S); _cx2.fillStyle = '#fff'; _cx2.fillRect(0, 0, W, H);
+          drawSig(_cx2);
+          const _d1 = _pc2.toDataURL('image/jpeg', 0.92);
+          jpegs.push({ bytes: pdfB64ToBytes((_d1.split(',')[1] || '')), w: _pc2.width, h: _pc2.height });
+          continue;
+        }
+      }
+    }
+    ctx.textAlign = 'left';
+    const dataUrl = pc.toDataURL('image/jpeg', 0.92);
+    jpegs.push({ bytes: pdfB64ToBytes((dataUrl.split(',')[1] || '')), w: pc.width, h: pc.height });
+  }
+  return jpegs;
+}
 function pdfStatementJpegs(){
   const data = pdfStatementData();
   if(!data) return null;
   if(data.personSections) return pdfPersonSectionsJpegs(data);
+  if(data.bankLoans) return pdfBankLoansJpegs(data);
   const S = 2, W = 794, H = 1123, M = 24, CW = W - 2 * M, PAGE_H = H - 2 * M;
   const F = '12px system-ui, -apple-system, "Segoe UI", sans-serif';
   const FB = '700 12px system-ui, -apple-system, "Segoe UI", sans-serif';
@@ -3442,9 +3764,9 @@ function pickPerson(pi){
 /* ---------- Phase 3: PDFs ---------- */
 function loansPdfHtml(){
   if(loansKind === 'bank'){
-    const rows = (state.bankLoans || []).map(e => ({ date: e.date || '', person: '', category: 'Bank Loan', note: (e.bank || e.name || '') + (e.note ? ' • ' + e.note : ''), from: e.medium || '', to: e.medium || '', amount: +(e.amount || 0) }));
-    const period = statementPeriod(loansFrom, loansTo, rows);
-    return statementHeaderHtml('History - Bank Loan', rows.length, period) + statementEntriesTable(rows, 'noCategory');
+    const loans = bankLoansInRange(state.bankLoans, loansFrom, loansTo);
+    const period = statementPeriod(loansFrom, loansTo, loans.map(e => ({ date: e.date || e.loanDate || '' })));
+    return statementHeaderHtml('History - Bank Loan', loans.length, period) + bankLoanDetailHtml(loans);
   }
   const people = loansPeopleFiltered();
   const period = statementPeriod(loansFrom, loansTo, []);
@@ -7610,6 +7932,7 @@ function TravelManager({t, lang, setToast, onClose}){
   const [openGroups, setOpenGroups] = React.useState({electronics:true});
   const [editingId, setEditingId] = React.useState(null);
   const [othersNote, setOthersNote] = React.useState(()=>{ try{ return localStorage.getItem('travel_others_note')||''; }catch(e){ return ''; } });
+  function parseOthersNote(txt){ const seen={}; const out=[]; (txt||'').split(/[,\r\n]+/).forEach(function(part){ const nm=part.trim(); if(nm && !seen[nm]){ seen[nm]=1; out.push(nm); } }); return out; }
 
   React.useEffect(()=>{ try{ localStorage.setItem('lifestyle_travel_list', JSON.stringify(travelList)); }catch(e){} }, [travelList]);
 
@@ -7691,12 +8014,29 @@ function TravelManager({t, lang, setToast, onClose}){
     setToDiv(tr.toDiv||''); setToDist(tr.toDist||''); setToUpa(tr.toUpa||'');
     setFromDate(tr.fromDate||today()); setToDate(tr.toDate||today());
     setSelected(tr.selected||[]); setEditingId(tr.id);
+    const _curNames = parseOthersNote(othersNote);
+    (tr.selected||[]).forEach(function(s){ if(s.indexOf('custom:')===0){ const _nm=s.slice(7); if(_nm && _curNames.indexOf(_nm)<0) _curNames.push(_nm); } });
+    const _nv = _curNames.join(', ');
+    setOthersNote(_nv);
+    try{ localStorage.setItem('travel_others_note', _nv); }catch(e){}
     setActiveTab('new');
     window.scrollTo(0,0);
   };
 
+  const customOtherNames = parseOthersNote(othersNote);
+  const deleteCustomItem = (customId)=>{
+    const nm = customId.slice(7);
+    const remaining = customOtherNames.filter(function(x){ return x!==nm; });
+    const nv = remaining.join(', ');
+    setOthersNote(nv);
+    try{ localStorage.setItem('travel_others_note', nv); }catch(e){}
+    setSelected(function(prev){ return prev.filter(function(x){ return x!==customId; }); });
+  };
   const filteredGroups = TRAVEL_GROUPS.map(g=>{
     let items=g.items;
+    if(g.id==='others'){
+      items = items.concat(customOtherNames.map(function(nm){ return {id:'custom:'+nm, label:nm, icon:'📦'}; }));
+    }
     if(search){
       const s=search.toLowerCase();
       const filtered=items.filter(it=> it.label.toLowerCase().includes(s));
@@ -7767,6 +8107,16 @@ function TravelManager({t, lang, setToast, onClose}){
               openGroups[g.id] ? h('div', {className:'p-3 grid grid-cols-1 gap-3 bg-white'},
                 g.items.map(it=>{
                   const sel=selected.includes(it.id);
+                  if(it.id.indexOf('custom:')===0){
+                    return h('div', {key:it.id, className:'flex items-center gap-2 mb-1'},
+                      h('button', {onClick:()=>handleSelect(it.id), className:'flex-1 flex items-center gap-3 p-3 py-3 rounded-[12px] border-2 text-left transition-colors '+(sel ? 'bg-[#E8F5E9] border-[#2E7D32] text-[#1B4D3E]' : 'bg-[#FFEBEE] border-[#FFCDD2] text-[#B71C1C]')},
+                        h('div', {className:'w-[24px] h-[24px] rounded-[6px] flex items-center justify-center shrink-0 '+(sel ? 'bg-[#2E7D32]' : 'bg-[#B71C1C]')}, h('span', {className:'text-white text-[12px] font-bold'}, sel ? '✓' : '✕')),
+                        h('span', {className:'text-[18px]'}, it.icon),
+                        h('span', {className:'text-[14px] font-extrabold flex-1 leading-relaxed py-1'}, it.label)
+                      ),
+                      h('button', {onClick:()=>deleteCustomItem(it.id), className:'shrink-0 w-[38px] h-[38px] rounded-[10px] bg-[#FFEBEE] border border-[#FFCDD2] text-[#B71C1C] text-[15px] font-bold'}, '✕')
+                    );
+                  }
                   return h('button', {key:it.id, onClick:()=>handleSelect(it.id), className:'flex items-center gap-3 p-3 py-3 rounded-[12px] border-2 text-left transition-colors mb-1 '+(sel ? 'bg-[#E8F5E9] border-[#2E7D32] text-[#1B4D3E]' : 'bg-[#FFEBEE] border-[#FFCDD2] text-[#B71C1C]')},
                     h('div', {className:'w-[24px] h-[24px] rounded-[6px] flex items-center justify-center shrink-0 '+(sel ? 'bg-[#2E7D32]' : 'bg-[#B71C1C]')}, h('span', {className:'text-white text-[12px] font-bold'}, sel ? '✓' : '✕')),
                     h('span', {className:'text-[18px]'}, it.icon),
@@ -7810,6 +8160,7 @@ function TravelManager({t, lang, setToast, onClose}){
                 (tr.selected||[]).map(sid=>{
                   let lbl=sid;
                   TRAVEL_GROUPS.forEach(g=>{ g.items.forEach(it=>{ if(it.id===sid) lbl=it.label; }); });
+                  if(sid.indexOf('custom:')===0) lbl=sid.slice(7);
                   const isPacked = tr.packed && tr.packed.includes(sid);
                   return h('div', {key:sid, className:'flex items-center gap-2 py-2 border-b border-[#F3E8D3]/50 last:border-0 cursor-pointer '+(isPacked ? 'bg-[#E8F5E9]/50' : ''), onClick:()=>togglePacked(tr.id, sid)},
                     h('div', {className:'w-[20px] h-[20px] rounded-[5px] border-2 flex items-center justify-center shrink-0 '+(isPacked ? 'bg-[#2E7D32] border-[#2E7D32]' : 'bg-[#B71C1C]')}, isPacked ? h('span', {className:'text-white text-[13px] font-bold'}, '✓') : null),
